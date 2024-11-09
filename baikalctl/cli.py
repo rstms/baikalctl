@@ -74,7 +74,7 @@ def users(ctx):
 @click.argument("display-name")
 @click.argument("password")
 @click.pass_obj
-def add_user(ctx, username, display_name, email_address, password):
+def add_user(ctx, username, display_name, password):
     """add user account"""
     ctx.add_user(username, display_name, password)
 

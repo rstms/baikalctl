@@ -3,7 +3,7 @@ FROM debian:bookworm-slim
 RUN apt update
 
 RUN apt update && \
-    apt install -y tigervnc-standalone-server tigervnc-common x11vnc fluxbox pipx tini
+    apt install -y tigervnc-standalone-server tigervnc-common x11vnc fluxbox pipx tini firefox-esr
 
 #RUN apt install -y procps vim net-tools sudo less man-db manpages doas && \
 #    apt clean && \
