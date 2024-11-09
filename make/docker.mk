@@ -64,10 +64,10 @@ ps:
 	docker ps
 
 start:
-	docker run -p 5999:5901 -d $(image)
+	docker run -p 5999:5901 -v $(HOME)/.baikalctl:/home/xbot/.baikalctl -d $(image)
 
 stop:
-	docker stop $(shell docker ps | awk '/$(image)/{print $$1}') /bin/bash
+	docker stop $(shell docker ps | awk '/$(image)/{print $$1}')
 
 shell:
 	docker exec -it $(shell docker ps | awk '/$(image)/{print $$1}') /bin/bash

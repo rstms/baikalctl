@@ -3,6 +3,8 @@
 import atexit
 import json
 import sys
+import yaml
+from pathlib import Path
 
 import click
 import click.core
@@ -26,6 +28,7 @@ def _cleanup(client):
 
 @click.group("baikalctl", context_settings={"auto_envvar_prefix": "BAIKALCTL"})
 @click.version_option(message=header)
+@click.option("-c", "--config", envvar="BAIKAL_CONFIG", default=Path.home() / ".baikalctl", help="config file")
 @click.option("-d", "--debug", is_eager=True, is_flag=True, callback=_ehandler, help="debug mode")
 @click.option("-u", "--username", envvar="BAIKAL_USERNAME", default="admin", help="username")
 @click.option("-p", "--password", envvar="BAIKAL_PASSWORD", help="password")
@@ -38,8 +41,17 @@ def _cleanup(client):
     help="configure shell completion",
 )
 @click.pass_context
-def cli(ctx, username, password, url, debug, shell_completion):
+def cli(ctx, config, username, password, url, debug, shell_completion):
     """baikalctl top-level help"""
+    cfgfile = Path(config)
+    if cfgfile.is_file():
+        cfgdata = yaml.safe_load(cfgfile.read_text())
+        if not url:
+            url = cfgdata['url']
+        if not username:
+            username = cfgdata['username']
+        if not password:
+            password = cfgdata['password']
     if not username:
         raise RuntimeError("username not specified")
     if not password:
