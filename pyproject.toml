@@ -24,7 +24,10 @@ dynamic = ["description"]
 dependencies = [
   "click",
   "selenium",
-  "pyyaml"
+  "pyyaml",
+  "fastapi",
+  "uvicorn",
+  "requests",
 ]
 
 [tool.flit.module]
