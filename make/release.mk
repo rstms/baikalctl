@@ -10,7 +10,7 @@ ifeq "v$(version)" "$(latest_release)"
 else
 	gh release create v$(version) --generate-notes --target master;
 	gh release upload v$(version) $(wheel);
-	config-devpi
+	devpi-config
 	devpi upload $(wheel)
 endif
 	@touch $@

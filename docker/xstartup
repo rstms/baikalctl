@@ -1,3 +1,3 @@
 #!/bin/sh
 xrdb $HOME/.xresources
-fluxbox &
+fluxbox

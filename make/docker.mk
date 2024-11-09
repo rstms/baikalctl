@@ -5,8 +5,8 @@
 $(if $(DOCKER_REGISTRY),,$(error DOCKER_REGISTRY is undefined))
 
 registry := $(DOCKER_REGISTRY)
-base_image := python
-base_version := alpine
+base_image := debian
+base_version := bullseye-slim
 
 image_tag := $(project)
 image := $(image_tag):latest
@@ -58,4 +58,16 @@ push: build release
 
 ### run docker image
 run:
-	docker run -it --rm $(image) run
+	docker run -it --rm $(image)
+
+ps:
+	docker ps
+
+start:
+	docker run -p 5999:5901 -d $(image)
+
+stop:
+	docker stop $(shell docker ps | awk '/$(image)/{print $$1}') /bin/bash
+
+shell:
+	docker exec -it $(shell docker ps | awk '/$(image)/{print $$1}') /bin/bash
