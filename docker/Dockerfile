@@ -28,6 +28,7 @@ USER xbot
 WORKDIR /home/xbot
 
 RUN echo "export PATH=$HOME/.local/bin:$PATH" >>.bashrc
+
 RUN pipx install baikalctl
 
 ENV DISPLAY=:1
