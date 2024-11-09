@@ -25,17 +25,13 @@ def _shell_completion(ctx, option, shell):
 
     if shell == "bash":
         click.echo(f"Writing file ~/.{cli}-complete.bash...")
-        os.system(
-            f"_{cli.upper()}_COMPLETE=bash_source {cli} >~/.{cli}-complete.bash"
-        )
+        os.system(f"_{cli.upper()}_COMPLETE=bash_source {cli} >~/.{cli}-complete.bash")
         click.echo("Source this file from ~/.bashrc")
         click.echo(f"ex: . ~/.{cli}-complete.bash")
 
     elif shell == "zsh":
         click.echo(f"Writing file ~/.{cli}-complete.zsh...")
-        os.system(
-            f"_{cli.upper()}_COMPLETE=zsh_source {cli} >~/.{cli}-complete.zsh"
-        )
+        os.system(f"_{cli.upper()}_COMPLETE=zsh_source {cli} >~/.{cli}-complete.zsh")
         click.echo("Source this file from ~/.zshrc")
         click.echo(f"ex: . ~/.{cli}-complete.zsh")
 

@@ -20,3 +20,12 @@ clean:
 	for clean in $(call included,clean); do ${MAKE} $$clean; done
 
 include $(wildcard make/*.mk)
+
+dbuild:
+	docker build --tag xnode docker
+
+dstart:
+	docker run -d xnode
+
+dshell:
+	docker run --rm -it xnode
