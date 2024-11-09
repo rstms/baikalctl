@@ -23,6 +23,7 @@ RUN echo vnc | vncpasswd -f >/home/xbot/.vnc/passwd && \
     chown -R xbot:xbot /home/xbot/.vnc
 
 EXPOSE 5901
+EXPOSE 8000
 
 USER xbot
 WORKDIR /home/xbot
@@ -33,4 +34,4 @@ RUN pipx install baikalctl
 
 ENV DISPLAY=:1
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/bin/sh", "-c", "vncserver :1 -geometry 1280x800 -depth 24 -localhost no && sleep inf"]
+CMD ["/bin/sh", "-c", "vncserver :1 -geometry 1280x800 -depth 24 -localhost no && baikalctl server -l DEBUG"]
