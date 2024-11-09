@@ -34,4 +34,4 @@ RUN pipx install baikalctl
 
 ENV DISPLAY=:1
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/bin/sh", "-c", "vncserver :1 -geometry 1280x800 -depth 24 -localhost no && baikalctl server -l DEBUG"]
+CMD ["/bin/bash", "-ic", "vncserver :1 -geometry 1280x800 -depth 24 -localhost no && baikalctl server -l DEBUG"]

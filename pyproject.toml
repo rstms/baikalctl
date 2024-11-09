@@ -25,7 +25,7 @@ dependencies = [
   "click",
   "selenium",
   "pyyaml",
-  "fastapi",
+  "fastapi[standard]",
   "uvicorn",
   "requests",
 ]
