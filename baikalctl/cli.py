@@ -26,7 +26,6 @@ def _ehandler(ctx, option, debug):
 def _cleanup():
     baikal.shutdown()
 
-
 @click.group("baikalctl", context_settings={"auto_envvar_prefix": "BAIKALCTL"})
 @click.version_option(message=header)
 @click.option("-C", "--config-file", envvar="BAIKAL_CONFIG", default=Path.home() / ".baikalctl", help="config file")
@@ -35,6 +34,8 @@ def _cleanup():
 @click.option("-p", "--password", envvar="BAIKAL_PASSWORD", help="password")
 @click.option("-U", "--url", envvar="BAIKAL_URL", help="password")
 @click.option("-a", "--api", envvar="BAIKAL_API", help="api url")
+@click.option("-A", "--address", envvar="BAIKAL_SERVER_ADDRESS", help="server listen address")
+@click.option("-P", "--port", type=int, default=None, envvar="BAIKAL_SERVER_PORT", help="server listen port")
 @click.option(
     "--shell-completion",
     is_flag=False,
@@ -43,7 +44,7 @@ def _cleanup():
     help="configure shell completion",
 )
 @click.pass_context
-def cli(ctx, config_file, username, password, url, api, debug, shell_completion):
+def cli(ctx, config_file, username, password, url, api, address, port, debug, shell_completion):
     """baikalctl top-level help"""
     cfgfile = Path(config_file)
     if cfgfile.is_file():
@@ -54,6 +55,10 @@ def cli(ctx, config_file, username, password, url, api, debug, shell_completion)
             username = cfgdata["username"]
         if not password:
             password = cfgdata["password"]
+        if not address:
+            address = cfgdata['address']
+        if not port:
+            port = int(cfgdata['port'])
     if not username:
         raise RuntimeError("username not specified")
     if not password:
@@ -65,7 +70,7 @@ def cli(ctx, config_file, username, password, url, api, debug, shell_completion)
         baikal.url = api
         baikal.client = True
     else:
-        baikal.startup(url, username, password)
+        baikal.startup(url, username, password, address, port)
         atexit.register(_cleanup)
     ctx.obj = baikal
 
@@ -123,15 +128,13 @@ def rmbook(ctx, username, name):
 
 
 @cli.command
-@click.option("-a", "--address", default="127.0.0.1", help="listen address")
-@click.option("-p", "--port", default=8000, help="listen port")
 @click.option("-l", "--log-level", default="ERROR", help="log level")
 @click.pass_obj
-def server(ctx, address, port, log_level):
+def server(ctx, log_level):
     uvicorn.run(
         "baikalctl:app",
-        host=address,
-        port=port,
+        host=ctx.address,
+        port=ctx.port,
         log_level=log_level.lower(),
     )
 

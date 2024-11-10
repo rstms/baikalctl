@@ -56,15 +56,17 @@ push: build release
 	docker push $(image_tag):$(version)
 	docker push $(image)
 
+docker_opts = -p 5999:5901 -p 8000:8000 -v $(HOME)/.baikalctl:/home/xbot/.baikalctl
+
 ### run docker image
 run:
-	docker run -it --rm $(image)
+	docker run -it --rm $(docker_opts) $(image)
 
 ps:
 	docker ps
 
 start:
-	docker run -p 5999:5901 -v $(HOME)/.baikalctl:/home/xbot/.baikalctl -d $(image)
+	docker run $(docker_opts) -d $(image)
 
 stop:
 	docker stop $(shell docker ps | awk '/$(image)/{print $$1}')

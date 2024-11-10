@@ -13,11 +13,13 @@ class Client:
     def __init__(self):
         pass
 
-    def startup(self, url, username, password):
+    def startup(self, url, username, password, address, port):
         self.client = False
         self.url = url
         self.username = username
         self.password = password
+        self.address = address
+        self.port = port
         options = webdriver.FirefoxOptions()
         self.driver = webdriver.Firefox(options=options)
         self.logged_in = False
@@ -227,7 +229,7 @@ class Client:
         if self.client:
             return self._parse_response(requests.post(f"{self.url}/reset/"))
         self.shutdown()
-        self.startup(baikal.url, baikal.username, baikal.password)
+        self.startup(baikal.url, baikal.username, baikal.password, baikal.address, baikal.port)
         return dict(message="server reset")
 
 
