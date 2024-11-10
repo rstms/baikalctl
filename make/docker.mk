@@ -5,8 +5,8 @@
 $(if $(DOCKER_REGISTRY),,$(error DOCKER_REGISTRY is undefined))
 
 registry := $(DOCKER_REGISTRY)
-base_image := debian
-base_version := bullseye-slim
+base_image := alpine
+base_version := latest
 
 image_tag := $(project)
 image := $(image_tag):latest
@@ -69,7 +69,7 @@ start:
 	docker run $(docker_opts) -d $(image)
 
 stop:
-	docker stop $(shell docker ps | awk '/$(image)/{print $$1}')
+	id=$(shell docker ps | awk '/$(image)/{print $$1}'); docker stop $$id && docker rm $$id
 
 shell:
 	docker exec -it $(shell docker ps | awk '/$(image)/{print $$1}') /bin/bash
