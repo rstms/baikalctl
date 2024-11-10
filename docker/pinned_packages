@@ -1,0 +1,39 @@
+Package: *
+Pin: release a=stable
+Pin-Priority: 1000
+
+Package: *
+Pin: release a=DEVUAN_VERSION
+Pin-Priority: 2
+
+Package: udisks2
+Pin: release a=DEVUAN_VERSION
+Pin-Priority: 1001
+
+Package: libudisks2-0
+Pin: release a=DEVUAN_VERSION
+Pin-Priority: 1001
+
+Package: cgmanager
+Pin: release a=DEVUAN_VERSION
+Pin-Priority: 1001
+
+Package: libcgmanager0
+Pin: release a=DEVUAN_VERSION
+Pin-Priority: 1001
+
+Package: libpolkit-agent-1-0
+Pin: release a=DEVUAN_VERSION
+Pin-Priority: 1001
+
+Package: libpolkit-backend-1-0
+Pin: release a=DEVUAN_VERSION
+Pin-Priority: 1001
+
+Package: libpolkit-gobject-1-0
+Pin: release a=DEVUAN_VERSION
+Pin-Priority: 1001
+
+Package: policykit-1
+Pin: release a=DEVUAN_VERSION
+Pin-Priority: 1001

@@ -1,0 +1,11 @@
+devuan_version: daedalus
+devuan_keyring_package_url: http://deb.devuan.org/merged/pool/DEVUAN/main/d/devuan-keyring/devuan-keyring_2023.05.28_all.deb
+devuan_packages:
+  - udisks2
+  - libudisks2-0
+  - cgmanager 
+  - libcgmanager0 
+  - libpolkit-agent-1-0 
+  - libpolkit-backend-1-0 
+  - libpolkit-gobject-1-0
+  - policykit-1
