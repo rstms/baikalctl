@@ -1,0 +1,5 @@
+url: <baikal server url>
+username: admin
+password: <baikal server password>
+address: 0.0.0.0
+log_level: DEBUG

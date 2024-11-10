@@ -26,16 +26,18 @@ def _ehandler(ctx, option, debug):
 def _cleanup():
     baikal.shutdown()
 
-@click.group("baikalctl", context_settings={"auto_envvar_prefix": "BAIKALCTL"})
+
+@click.group("baikalctl", context_settings={"auto_envvar_prefix": "BAIKAL"})
 @click.version_option(message=header)
-@click.option("-C", "--config-file", envvar="BAIKAL_CONFIG", default=Path.home() / ".baikalctl", help="config file")
+@click.option("-C", "--config-file", default=Path.home() / ".baikalctl", help="config file (default ~/.baikalctl)")
 @click.option("-d", "--debug", is_eager=True, is_flag=True, callback=_ehandler, help="debug mode")
-@click.option("-u", "--username", envvar="BAIKAL_USERNAME", default="admin", help="username")
-@click.option("-p", "--password", envvar="BAIKAL_PASSWORD", help="password")
-@click.option("-U", "--url", envvar="BAIKAL_URL", help="password")
-@click.option("-a", "--api", envvar="BAIKAL_API", help="api url")
-@click.option("-A", "--address", envvar="BAIKAL_SERVER_ADDRESS", help="server listen address")
-@click.option("-P", "--port", type=int, default=None, envvar="BAIKAL_SERVER_PORT", help="server listen port")
+@click.option("-u", "--username", help="username (default: admin)")
+@click.option("-p", "--password", help="password")
+@click.option("-U", "--url", help="password")
+@click.option("-a", "--api", help="api url")
+@click.option("-A", "--address", help="server listen address (default: 127.0.0.1)")
+@click.option("-P", "--port", type=int, help="server listen port (default: 8000)")
+@click.option("-l", "--log-level", help="server log level (default: WARNING)")
 @click.option(
     "--shell-completion",
     is_flag=False,
@@ -44,7 +46,7 @@ def _cleanup():
     help="configure shell completion",
 )
 @click.pass_context
-def cli(ctx, config_file, username, password, url, api, address, port, debug, shell_completion):
+def cli(ctx, config_file, username, password, url, api, address, port, log_level, debug, shell_completion):
     """baikalctl top-level help"""
     cfgfile = Path(config_file)
     if cfgfile.is_file():
@@ -52,13 +54,15 @@ def cli(ctx, config_file, username, password, url, api, address, port, debug, sh
         if not url:
             url = cfgdata["url"]
         if not username:
-            username = cfgdata["username"]
+            username = cfgdata.get("username", "admin")
         if not password:
             password = cfgdata["password"]
         if not address:
-            address = cfgdata['address']
+            address = cfgdata.get("address", "127.0.0.1")
         if not port:
-            port = int(cfgdata['port'])
+            port = int(cfgdata.get("port", 8000))
+        if not log_level:
+            log_level = cfgdata.get("log_level", "WARNING")
     if not username:
         raise RuntimeError("username not specified")
     if not password:
@@ -70,7 +74,7 @@ def cli(ctx, config_file, username, password, url, api, address, port, debug, sh
         baikal.url = api
         baikal.client = True
     else:
-        baikal.startup(url, username, password, address, port)
+        baikal.startup(url, username, password, address, port, log_level)
         atexit.register(_cleanup)
     ctx.obj = baikal
 
@@ -128,14 +132,13 @@ def rmbook(ctx, username, name):
 
 
 @cli.command
-@click.option("-l", "--log-level", default="ERROR", help="log level")
 @click.pass_obj
-def server(ctx, log_level):
+def server(ctx):
     uvicorn.run(
         "baikalctl:app",
         host=ctx.address,
         port=ctx.port,
-        log_level=log_level.lower(),
+        log_level=ctx.log_level.lower(),
     )
 
 

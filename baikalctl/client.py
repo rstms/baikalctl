@@ -13,13 +13,14 @@ class Client:
     def __init__(self):
         pass
 
-    def startup(self, url, username, password, address, port):
+    def startup(self, url, username, password, address, port, log_level):
         self.client = False
         self.url = url
         self.username = username
         self.password = password
         self.address = address
         self.port = port
+        self.log_level = log_level
         options = webdriver.FirefoxOptions()
         self.driver = webdriver.Firefox(options=options)
         self.logged_in = False
@@ -142,7 +143,6 @@ class Client:
         for i, col in enumerate(users_cols):
             name, display, email = self._parse_user_col(col)
             if name == username:
-                print(f"found user {username} index={i}")
                 return i, table, col, None
         return -1, None, None, dict(error=f"not found: '{username}'")
 
@@ -229,7 +229,7 @@ class Client:
         if self.client:
             return self._parse_response(requests.post(f"{self.url}/reset/"))
         self.shutdown()
-        self.startup(baikal.url, baikal.username, baikal.password, baikal.address, baikal.port)
+        self.startup(baikal.url, baikal.username, baikal.password, baikal.address, baikal.port, baikal.log_level)
         return dict(message="server reset")
 
 
