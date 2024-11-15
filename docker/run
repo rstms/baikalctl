@@ -1,6 +1,6 @@
 #!/bin/bash
-echo $0
-vncserver :1 &
 export PATH=~/.local/bin:$PATH
+baikalctl --version
+vncserver :1 &
 baikalctl server
 pkill vncserver
