@@ -136,6 +136,7 @@ def rmbook(ctx, username, name):
 @cli.command
 @click.pass_obj
 def server(ctx):
+    click.echo(header)
     uvicorn.run(
         "baikalctl:app",
         host=ctx.address,
