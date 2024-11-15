@@ -23,6 +23,8 @@ RUN echo vncvnc | vncpasswd -f >/home/xbot/.vnc/passwd && \
 #EXPOSE 5901
 EXPOSE 8000
 
+COPY --chmod=0755 client /usr/local/bin/client
+
 USER xbot
 WORKDIR /home/xbot
 RUN echo "export PATH=$HOME/.local/bin:$PATH" >>.bashrc
