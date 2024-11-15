@@ -35,7 +35,7 @@ RUN pipx install baikalctl
 
 ENV DISPLAY=:1
 
-COPY --chmod=0700 run /home/xbot/run
+COPY --chown=xbot:xbot --chmod=0700 run /home/xbot/run
 
 ENTRYPOINT ["/sbin/tini", "--"]
 CMD /home/xbot/run

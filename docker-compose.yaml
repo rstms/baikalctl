@@ -1,0 +1,13 @@
+services:
+  baikalctl:
+    image: rstms/baikalctl:latest
+    restart: unless-stopped
+    ports:
+      - 127.0.0.1:8000:8000
+    environment:
+      BAIKAL_LOG_LEVEL: DEBUG
+      BAIKAL_ADDRESS: 0.0.0.0
+      BAIKAL_PORT: 8000
+      BAIKAL_PASSWORD:
+      BAIKAL_URL: https://caldav.rstms.net/baikal
+      BAIKAL_USERNAME: admin

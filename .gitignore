@@ -120,3 +120,4 @@ docker/.build
 docker/*.whl
 postactivate
 notes
+.password
