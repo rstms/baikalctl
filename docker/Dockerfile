@@ -34,9 +34,14 @@ RUN echo "export PATH=$HOME/.local/bin:$PATH" >>.bashrc
 COPY --chmod=0444 VERSION VERSION
 RUN export PATH=${HOME}/.local/bin:${PATH}; pipx install baikalctl
 
-RUN echo VERSION=$(cat VERSION) 
-RUN echo baikalctl=$(env BAIKAL_PASSWORD=. run version)
-RUN if [ "$(cat VERSION)" != "$(env BAIKAL_PASSWORD=. run version)" ]; then { echo "Version mismatch failure."; exit 1; }; fi
+RUN env BAIKAL_PASSWORD=. run --version || true
+
+RUN \
+    V="$(cat VERSION)"; \
+    B="$({ env BAIKAL_PASSWORD=. run --version || true; } | awk -F '[v ]*' '{print $2}')"; \
+    echo "VERSION File:	$V"; \
+    echo "Installed:	$B"; \
+    if [ "$V" != "$B" ]; then echo "Version mismatch failure"; exit 1; fi
 
 ENV DISPLAY=:1
 
