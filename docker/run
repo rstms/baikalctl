@@ -3,8 +3,10 @@ set -ue
 
 export PATH=~/.local/bin:$PATH
 
+echo PASSWORD=$BAIKAL_PASSWORD
+
 export BAIKAL_USERNAME=${BAIKAL_USERNAME:-admin}
-export BAIKAL_PASSWORD=${BAIKAL_PASSWORD}
+#export BAIKAL_PASSWORD=${BAIKAL_PASSWORD}
 export BAIKAL_URL=${BAIKAL_URL:-https://caldav.rstms.net/baikal}
 export BAIKAL_ADDRESS=${BAIKAL_ADDRESS:-0.0.0.0}
 export BAIKAL_PORT=${BAIKAL_PORT:-8000}

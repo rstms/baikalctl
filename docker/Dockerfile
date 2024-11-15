@@ -21,7 +21,7 @@ RUN echo vncvnc | vncpasswd -f >/home/xbot/.vnc/passwd && \
     chmod 600 /home/xbot/.vnc/passwd && \
     chown -R xbot:xbot /home/xbot/.vnc
 
-#EXPOSE 5901
+EXPOSE 5901
 EXPOSE 8000
 
 COPY --chmod=0755 client /usr/local/bin/client
