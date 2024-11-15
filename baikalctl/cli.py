@@ -163,6 +163,7 @@ def server(ctx):
 def reset(ctx):
     click.echo(json.dumps(ctx.reset(), indent=2))
 
+
 @cli.command
 @click.pass_obj
 def version(ctx):

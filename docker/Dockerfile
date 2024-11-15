@@ -25,22 +25,22 @@ RUN echo vncvnc | vncpasswd -f >/home/xbot/.vnc/passwd && \
 EXPOSE 8000
 
 COPY --chmod=0755 client /usr/local/bin/client
+COPY --chmod=0755 run /usr/local/bin/run
 
 USER xbot
 WORKDIR /home/xbot
 RUN echo "export PATH=$HOME/.local/bin:$PATH" >>.bashrc
 
+COPY --chmod=0444 VERSION VERSION
 RUN export PATH=${HOME}/.local/bin:${PATH}; pipx install baikalctl
 
-COPY --chmod=0444 VERSION VERSION
 RUN echo VERSION=$(cat VERSION) 
-RUN ./local/bin/baikalctl version
-RUN if [ "$(cat VERSION)" != "$(.local/bin/baikalctl version)" ]; then { echo "Version mismatch failure."; exit 1; }; fi
+RUN echo baikalctl=$(env BAIKAL_PASSWORD=. run version)
+RUN if [ "$(cat VERSION)" != "$(env BAIKAL_PASSWORD=. run version)" ]; then { echo "Version mismatch failure."; exit 1; }; fi
 
 ENV DISPLAY=:1
 
-COPY --chown=xbot:xbot --chmod=0700 run /home/xbot/run
 
 ENTRYPOINT ["/sbin/tini", "--"]
 
-CMD /home/xbot/run
+CMD /usr/local/bin/run

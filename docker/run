@@ -1,15 +1,24 @@
 #!/bin/bash
 set -ue 
+
 export PATH=~/.local/bin:$PATH
+
 export BAIKAL_USERNAME=${BAIKAL_USERNAME:-admin}
 export BAIKAL_PASSWORD=${BAIKAL_PASSWORD}
 export BAIKAL_URL=${BAIKAL_URL:-https://caldav.rstms.net/baikal}
 export BAIKAL_ADDRESS=${BAIKAL_ADDRESS:-0.0.0.0}
 export BAIKAL_PORT=${BAIKAL_PORT:-8000}
-export BAIKAL_API=${BAIKAL_API:-http://127.0.0.1:8000}
+export BAIKAL_API=${BAIKAL_API:-}
 export BAIKAL_LOG_LEVEL=${BAIKAL_LOG_LEVEL:-WARNING}
 export BAIKAL_DEBUG=${BAIKAL_DEBUG:-0}
 export BAIKAL_VERBOSE=${BAIKAL_VERBOSE:-0}
+
 vncserver :1 >vncserver.log 2>&1 &
-baikalctl server
+
+if [ $# = 0 ]; then
+    baikalctl server
+else
+    baikalctl "$@"
+fi
+
 pkill vncserver
