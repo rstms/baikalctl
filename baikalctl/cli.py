@@ -163,6 +163,12 @@ def server(ctx):
 def reset(ctx):
     click.echo(json.dumps(ctx.reset(), indent=2))
 
+@cli.command
+@click.pass_obj
+def version(ctx):
+    """version"""
+    click.echo(__version__)
+
 
 if __name__ == "__main__":
     sys.exit(cli())  # pragma: no cover
