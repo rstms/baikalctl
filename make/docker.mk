@@ -38,7 +38,7 @@ docker/.build: $(docker_deps)
 	touch $@
 
 ### rebuild image
-rebuild: clean depends
+rebuild: clean depends 
 	$(MAKE) build_opts="$(build_opts) --no-cache" build
 
 ### docker-clean
@@ -50,7 +50,7 @@ docker-sterile: docker-clean
 
 
 ### push image to docker registry
-push: build release
+push: rebuild release
 	docker tag $(image_tag):$(version) $(registry)/$(image_tag):$(version)
 	docker tag $(image_tag):$(version) $(registry)/$(image_tag):latest
 	docker push $(registry)/$(image_tag):$(version)
