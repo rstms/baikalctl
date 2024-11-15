@@ -7,7 +7,7 @@ RUN apk add \
     firefox \
     xfce4 \
     xfce4-terminal \
-    py3-pip 
+    pipx 
 
 RUN adduser xbot -D -s /bin/bash
 
@@ -29,19 +29,9 @@ USER xbot
 WORKDIR /home/xbot
 RUN echo "export PATH=$HOME/.local/bin:$PATH" >>.bashrc
 
-COPY VERSION .
-
-ARG VERSION
-ENV VERSION=${VERSION}
-
-ARG WHEEL
-ENV WHEEL=${WHEEL}
-
-RUN mkdir wheel
-COPY --chown=xbot ${WHEEL} wheel/
 RUN \
     export PATH=${HOME}/.local/bin:${PATH} && \
-    pip install --user --break-system-packages wheel/${WHEEL} && \
+    pipx install baikalctl && \
     baikalctl --version
 
 ENV DISPLAY=:1
@@ -49,6 +39,5 @@ ENV DISPLAY=:1
 COPY --chown=xbot:xbot --chmod=0700 run /home/xbot/run
 
 ENTRYPOINT ["/sbin/tini", "--"]
+
 CMD /home/xbot/run
-#CMD ["/bin/bash", "-ic", "vncserver :1 -geometry 1280x800 -depth 24 -localhost no && baikalctl server"]
-#CMD ["/bin/sh", "-c", "sleep inf"]
