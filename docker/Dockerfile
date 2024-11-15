@@ -29,18 +29,26 @@ COPY --chmod=0755 run /usr/local/bin/run
 
 USER xbot
 WORKDIR /home/xbot
-RUN echo "export PATH=$HOME/.local/bin:$PATH" >>.bashrc
+RUN echo "export PATH=/home/xbot/.local/bin:$PATH" >>.bashrc
 
 COPY --chmod=0444 VERSION VERSION
-RUN export PATH=${HOME}/.local/bin:${PATH}; pipx install baikalctl
 
-RUN env BAIKAL_PASSWORD=. run --version || true
+ENV PATH=/home/xbot/.local/bin:${PATH}
+
+#RUN export PATH=${HOME}/.local/bin:${PATH}; pipx install baikalctl
+ARG WHEEL
+ENV WHEEL=$WHEEL
+COPY --chmod=0644 $WHEEL .
+RUN pipx install -v $WHEEL 
+
+RUN which baikalctl
+RUN env BAIKAL_PASSWORD=. baikalctl --version || true
 
 RUN \
-    V="$(cat VERSION)"; \
-    B="$({ env BAIKAL_PASSWORD=. run --version || true; } | awk -F '[v ]*' '{print $2}')"; \
-    echo "VERSION File:	$V"; \
-    echo "Installed:	$B"; \
+    V="$(cat VERSION | head -1)"; \
+    B="$({ env BAIKAL_PASSWORD=. baikalctl --version || true; } | awk -F '[v ]*' '{print $2}' | head -1)"; \
+    echo "VERSION File: $V"; \
+    echo "Installed: $B"; \
     if [ "$V" != "$B" ]; then echo "Version mismatch failure"; exit 1; fi
 
 ENV DISPLAY=:1
