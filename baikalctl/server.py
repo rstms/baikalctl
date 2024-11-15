@@ -20,8 +20,8 @@ class AddressBook(BaseModel):
     bookname: str
     description: str
 
-@app.post("/version/")
-def post_reset():
+@app.get("/version/")
+def get_version():
     return __version__
 
 
