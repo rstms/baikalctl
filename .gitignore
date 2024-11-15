@@ -121,3 +121,4 @@ docker/*.whl
 postactivate
 notes
 .password
+.env

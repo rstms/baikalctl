@@ -2,6 +2,7 @@
 
 import re
 
+import click
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -13,7 +14,15 @@ class Client:
     def __init__(self):
         pass
 
-    def startup(self, url, username, password, address, port, log_level):
+    def log(self, msg):
+        if self.verbose:
+            if self.client:
+                mode = "client"
+            else:
+                mode = "server"
+            click.echo(f"[{mode}] {msg}", err=True)
+
+    def startup(self, url, username, password, address, port, log_level, verbose):
         self.client = False
         self.url = url
         self.username = username
@@ -24,8 +33,11 @@ class Client:
         options = webdriver.FirefoxOptions()
         self.driver = webdriver.Firefox(options=options)
         self.logged_in = False
+        self.verbose = verbose
+        self.log("startup")
 
     def shutdown(self):
+        self.log("shutdown")
         if self.logged_in:
             self._logout()
         self.driver.quit()
@@ -33,6 +45,7 @@ class Client:
     def _login(self):
         if self.logged_in:
             return
+        self.log("login")
         self.driver.get(self.url + "/admin/")
         username_text = self.driver.find_element(by=By.ID, value="login")
         password_text = self.driver.find_element(by=By.ID, value="password")
@@ -48,6 +61,7 @@ class Client:
 
     def _logout(self):
         if self.logged_in:
+            self.log("logout")
             self.driver.get(self.url + "/admin/")
             self.driver.find_element(by=By.LINK_TEXT, value="Logout").click()
             self.logged_in = False
@@ -68,6 +82,7 @@ class Client:
         return response.json()
 
     def list_users(self):
+        self.log("list_users")
         if self.client:
             return self._parse_response(requests.get(f"{self.url}/users/"))
         self._login()
@@ -105,6 +120,7 @@ class Client:
         return None
 
     def add_user(self, username, displayname, password):
+        self.log(f"add_user {username} {displayname} ************")
         err = self._validate_email(username)
         if err:
             return err
@@ -147,6 +163,7 @@ class Client:
         return -1, None, None, dict(error=f"not found: '{username}'")
 
     def delete_user(self, username):
+        self.log(f"delete_user {username}")
         if self.client:
             return self._parse_response(requests.delete(f"{self.url}/user/{username}/"))
         i, table, col, err = self._find_user_column(username)
@@ -161,6 +178,7 @@ class Client:
         return dict(error="not found: '{username}'")
 
     def list_address_books(self, username):
+        self.log(f"list_address_books {username}")
         if self.client:
             return self._parse_response(requests.get(f"{self.url}/addressbooks/{username}/"))
         i, table, col, err = self._find_user_column(username)
@@ -176,6 +194,7 @@ class Client:
         return books
 
     def add_address_book(self, username, name, description):
+        self.log(f"add_address_book {username} {name} {description}")
         err = self._validate_email(username)
         if err:
             return err
@@ -208,6 +227,7 @@ class Client:
         return dict(added_address_book=name)
 
     def delete_address_book(self, username, name):
+        self.log(f"delete_address_book {username} {name}")
         if self.client:
             return self._parse_response(requests.delete(f"{self.url}/addressbook/{username}/{name}/"))
         i, table, col, err = self._find_user_column(username)
@@ -226,6 +246,7 @@ class Client:
         return dict(error=f"not found: '{name}'")
 
     def reset(self):
+        self.log("reset")
         if self.client:
             return self._parse_response(requests.post(f"{self.url}/reset/"))
         self.shutdown()

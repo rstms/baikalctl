@@ -14,10 +14,8 @@ docker_wheel := $(notdir $(wheel))
 
 build_opts := \
  --build-arg USER=$(project) \
- --build-arg BASE_IMAGE=$(base_image):$(base_version) \
  --build-arg VERSION=$(version) \
  --build-arg WHEEL=$(docker_wheel) \
- --build-arg SERVICE_EXEC=$(cli) \
  --tag $(image_tag) \
  --progress plain
 
@@ -53,23 +51,28 @@ docker-sterile: docker-clean
 
 ### push image to docker registry
 push: build release
-	docker push $(image_tag):$(version)
-	docker push $(image)
+	docker tag $(image_tag):$(version) $(registry)/$(image_tag):$(version)
+	docker tag $(image_tag):$(version) $(registry)/$(image_tag):latest
+	docker push $(registry)/$(image_tag):$(version)
+	docker push $(registry)/$(image_tag):latest
 
-docker_opts = -p 5999:5901 -p 8000:8000 -v $(HOME)/.baikalctl:/home/xbot/.baikalctl
+docker_opts = 
 
 ### run docker image
 run:
-	docker run -it --rm $(docker_opts) $(image)
+	docker compose $(docker_opts) up baikalctl
 
 ps:
-	docker ps
+	docker compose ps 
 
 start:
-	docker run $(docker_opts) -d $(image)
+	docker compose $(docker_opts) up -d baikalctl
 
 stop:
-	id=$(shell docker ps | awk '/$(image)/{print $$1}'); docker stop $$id && docker rm $$id
+	docker compose $(docker_opts) down baikalctl
 
 shell:
-	docker exec -it $(shell docker ps | awk '/$(image)/{print $$1}') /bin/bash
+	docker compose exec baikalctl /bin/bash
+
+tail:
+	while true; do { docker compose logs --follow baikalctl; sleep 3; }; done

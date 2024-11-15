@@ -11,3 +11,4 @@ services:
       BAIKAL_PASSWORD:
       BAIKAL_URL: https://caldav.rstms.net/baikal
       BAIKAL_USERNAME: admin
+      BAIKAL_VERBOSE: 1

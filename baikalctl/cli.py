@@ -38,6 +38,7 @@ def _cleanup():
 @click.option("-A", "--address", help="server listen address (default: 127.0.0.1)")
 @click.option("-P", "--port", type=int, help="server listen port (default: 8000)")
 @click.option("-l", "--log-level", help="server log level (default: WARNING)")
+@click.option("-v", "--verbose", is_flag=True, help="enable diagnostic output")
 @click.option(
     "--shell-completion",
     is_flag=False,
@@ -46,7 +47,7 @@ def _cleanup():
     help="configure shell completion",
 )
 @click.pass_context
-def cli(ctx, config_file, username, password, url, api, address, port, log_level, debug, shell_completion):
+def cli(ctx, config_file, username, password, url, api, address, port, log_level, verbose, debug, shell_completion):
     """baikalctl top-level help"""
     cfgfile = Path(config_file)
     if cfgfile.is_file():
@@ -73,8 +74,9 @@ def cli(ctx, config_file, username, password, url, api, address, port, log_level
     if api:
         baikal.url = api
         baikal.client = True
+        baikal.verbose = verbose
     else:
-        baikal.startup(url, username, password, address, port, log_level)
+        baikal.startup(url, username, password, address, port, log_level, verbose)
         atexit.register(_cleanup)
     ctx.obj = baikal
 

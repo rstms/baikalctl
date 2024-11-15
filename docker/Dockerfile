@@ -5,9 +5,9 @@ RUN apk add \
     tini \
     tigervnc \
     firefox \
-    pipx \
     xfce4 \
-    xfce4-terminal
+    xfce4-terminal \
+    py3-pip 
 
 RUN adduser xbot -D -s /bin/bash
 
@@ -26,12 +26,21 @@ EXPOSE 8000
 USER xbot
 WORKDIR /home/xbot
 RUN echo "export PATH=$HOME/.local/bin:$PATH" >>.bashrc
-COPY VERSION .
-RUN pipx install baikalctl
 
-#USER root
-#RUN apk add doas less vim
-#USER xbot
+COPY VERSION .
+
+ARG VERSION
+ENV VERSION=${VERSION}
+
+ARG WHEEL
+ENV WHEEL=${WHEEL}
+
+RUN mkdir wheel
+COPY --chown=xbot ${WHEEL} wheel/
+RUN \
+    export PATH=${HOME}/.local/bin:${PATH} && \
+    pip install --user --break-system-packages wheel/${WHEEL} && \
+    baikalctl --version
 
 ENV DISPLAY=:1
 
