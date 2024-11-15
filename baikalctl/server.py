@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import FastAPI, Form
 from pydantic import BaseModel
 
-from .version import __version__
 from .client import baikal
+from .version import __version__
 
 app = FastAPI()
 
@@ -19,6 +19,7 @@ class AddressBook(BaseModel):
     username: str
     bookname: str
     description: str
+
 
 @app.get("/version/")
 def get_version():

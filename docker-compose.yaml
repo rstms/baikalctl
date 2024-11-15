@@ -4,12 +4,13 @@ services:
     restart: unless-stopped
     ports:
       - 127.0.0.1:8000:8000
-      - 0.0.0.0:5999:5901
     environment:
-      BAIKAL_LOG_LEVEL: ${BAIKAL_LOG_LEVEL:-DEBUG}
-      BAIKAL_ADDRESS: 0.0.0.0
-      BAIKAL_PORT: 8000
+      BAIKAL_USERNAME: ${BAIKAL_USERNAME:-admin}
       BAIKAL_PASSWORD:
-      BAIKAL_URL: http://caldav.rstms.net/baikal
-      BAIKAL_USERNAME: admin
-      BAIKAL_VERBOSE: ${BAIKAL_VERBOSE:-0}
+      BAIKAL_URL: ${BAIKAL_URL:-http://caldav.rstms.net/baikal}
+      BAIKAL_ADDRESS: ${BAIKAL_ADDRESS:-0.0.0.0}
+      BAIKAL_PORT: ${BAIKAL_PORT:-8000}
+      BAIKAL_API: ${BAIKAL_API:-http://127.0.0.1:8000}
+      BAIKAL_LOG_LEVEL: ${BAIKAL_LOG_LEVEL:-DEBUG}
+      BAIKAL_DEBUG: ${BAIKAL_DEBUG:-1}
+      BAIKAL_VERBOSE: ${BAIKAL_VERBOSE:-1}

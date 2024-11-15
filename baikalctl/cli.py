@@ -51,6 +51,8 @@ def cli(ctx, config_file, username, password, url, api, address, port, log_level
     """baikalctl top-level help"""
     cfgfile = Path(config_file)
     if cfgfile.is_file():
+        if verbose:
+            click.echo(f"config_file={cfgfile}")
         cfgdata = yaml.safe_load(cfgfile.read_text())
         if not url:
             url = cfgdata["url"]
@@ -70,6 +72,17 @@ def cli(ctx, config_file, username, password, url, api, address, port, log_level
         raise RuntimeError("password not specified")
     if not url:
         raise RuntimeError("URL not specified")
+
+    if verbose:
+        click.echo(f"username={username}")
+        click.echo(f"password={'*'*len(password)}")
+        click.echo(f"url={url}")
+        click.echo(f"api={api}")
+        click.echo(f"address={address}")
+        click.echo(f"port={port}")
+        click.echo(f"log_level={log_level}")
+        click.echo(f"debug={debug}")
+        click.echo(f"verbose={verbose}")
 
     if api:
         baikal.url = api
