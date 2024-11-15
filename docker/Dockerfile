@@ -25,7 +25,7 @@ EXPOSE 5901
 EXPOSE 8000
 
 COPY --chmod=0755 client /usr/local/bin/client
-COPY --chmod=0755 run /usr/local/bin/run
+COPY --chmod=0755 server /usr/local/bin/server
 
 USER xbot
 WORKDIR /home/xbot
@@ -35,7 +35,6 @@ COPY --chmod=0444 VERSION VERSION
 
 ENV PATH=/home/xbot/.local/bin:${PATH}
 
-#RUN export PATH=${HOME}/.local/bin:${PATH}; pipx install baikalctl
 ARG WHEEL
 ENV WHEEL=$WHEEL
 COPY --chmod=0644 $WHEEL .
@@ -53,7 +52,6 @@ RUN \
 
 ENV DISPLAY=:1
 
-
 ENTRYPOINT ["/sbin/tini", "--"]
 
-CMD /usr/local/bin/run
+CMD /usr/local/bin/server

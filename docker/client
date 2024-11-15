@@ -1,3 +1,2 @@
 #!/bin/bash
-export PATH=/home/xbot/.local/bin:$PATH
 exec baikalctl "$@"
