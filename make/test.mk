@@ -29,19 +29,7 @@ coverage:
 	coverage run --source $(module) -m pytest
 	coverage report -m
 
-# tox dependency sources
-tox_src := $(filter-out $(module)/version.py,$(python_src))
-
-.tox: $(tox_src) tox.ini
-	$(if $(DISABLE_TOX),@echo 'tox is disabled',$(test_env) tox)
-
-### run tests under tox
-tox: .tox
-
-tox-clean:
-	rm -rf .tox
-
-test-clean: tox-clean
+test-clean:
 	rm -f .coverage
 
 test-sterile: test-clean

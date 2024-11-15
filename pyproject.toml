@@ -45,8 +45,7 @@ dev = [
   "pdbpp",
   "pytest",
   "python-box",
-  "toml",
-  "tox"
+  "toml"
 ]
 docs = [
   "m2r2",

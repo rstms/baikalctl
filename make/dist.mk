@@ -7,7 +7,7 @@ $(wheel): $(src) pyproject.toml
 	rm -f dist/$(module)-*.whl
 	flit build
 
-wheel: $(wheel) depends tox 
+wheel: $(wheel) depends
 
 ### build wheel 
 dist: wheel 
