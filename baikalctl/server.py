@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import FastAPI, Form
 from pydantic import BaseModel
 
+from .version import version
 from .client import baikal
 
 app = FastAPI()
@@ -18,6 +19,10 @@ class AddressBook(BaseModel):
     username: str
     bookname: str
     description: str
+
+@app.post("/version/")
+def post_reset():
+    return version
 
 
 @app.post("/reset/")

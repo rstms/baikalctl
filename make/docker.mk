@@ -60,13 +60,13 @@ docker_opts =
 
 ### run docker image
 run:
-	docker compose $(docker_opts) up baikalctl
+	docker compose $(docker_opts) up --force recreate baikalctl
 
 ps:
 	docker compose ps 
 
 start:
-	docker compose $(docker_opts) up -d baikalctl
+	docker compose $(docker_opts) up --force-recreate -d baikalctl
 
 stop:
 	docker compose $(docker_opts) down baikalctl
@@ -76,3 +76,8 @@ shell:
 
 tail:
 	while true; do { docker compose logs --follow baikalctl; sleep 3; }; done
+
+restart:
+	$(MAKE) stop
+	$(MAKE) start
+
