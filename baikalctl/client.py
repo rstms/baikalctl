@@ -2,17 +2,24 @@
 
 import re
 
+import arrow
 import click
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
-MIN_PASSWD_LEN = 8
+from .version import __version__
 
+MIN_PASSWD_LEN = 8
 
 class Client:
     def __init__(self):
-        pass
+        self.driver = None
+        self.logged_in = False
+        self.startup_time = arrow.now()
+        self.header = "baikalctl v" + __version__
+        self.log_level = "WARNING"
+        self.verbose = False
 
     def log(self, msg):
         if self.verbose:
@@ -22,29 +29,33 @@ class Client:
                 mode = "server"
             click.echo(f"[{mode}] {msg}", err=True)
 
-    def startup(self, url, username, password, address, port, log_level, verbose):
+    def startup(self, url, username, password, address, port):
         self.client = False
         self.url = url
         self.username = username
         self.password = password
         self.address = address
         self.port = port
-        self.log_level = log_level
-        options = webdriver.FirefoxOptions()
-        self.driver = webdriver.Firefox(options=options)
         self.logged_in = False
-        self.verbose = verbose
         self.log("startup")
+
+    def _load_driver(self):
+        if not self.driver:
+            self.log("load_driver")
+            options = webdriver.FirefoxOptions()
+            self.driver = webdriver.Firefox(options=options)
 
     def shutdown(self):
         self.log("shutdown")
         if self.logged_in:
             self._logout()
-        self.driver.quit()
+        if self.driver:
+            self.driver.quit()
 
     def _login(self):
         if self.logged_in:
             return
+        self._load_driver()
         self.log("login")
         self.driver.get(self.url + "/admin/")
         username_text = self.driver.find_element(by=By.ID, value="login")
@@ -250,8 +261,28 @@ class Client:
         if self.client:
             return self._parse_response(requests.post(f"{self.url}/reset/"))
         self.shutdown()
-        self.startup(baikal.url, baikal.username, baikal.password, baikal.address, baikal.port, baikal.log_level)
+        self.startup(
+            baikal.url,
+            baikal.username,
+            baikal.password,
+            baikal.address,
+            baikal.port,
+        )
         return dict(message="server reset")
+
+    def status(self):
+        self.log("status")
+        if self.client:
+            return self._parse_response(requests.get(f"{self.url}/status/"))
+        return dict(
+            name="baikalctl", version=__version__, driver=repr(self.driver), uptime=self.startup_time.humanize(),
+            url=self.url,
+            username=self.username,
+            password=self.password,
+            log_level=self.log_level,
+            verbose=self.verbose,
+            header=self.header
+        )
 
 
 baikal = Client()

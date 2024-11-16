@@ -2,6 +2,7 @@
 
 import atexit
 import json
+import socket
 import sys
 from pathlib import Path
 
@@ -27,18 +28,24 @@ def _cleanup():
     baikal.shutdown()
 
 
-@click.group("baikalctl", context_settings={"auto_envvar_prefix": "BAIKAL"})
+DEFAULT_URL = "http://caldav." + ".".join(socket.getfqdn().split(".")[1:]) + "/baikal"
+
+DEFAULTS = dict(username="admin", address="0.0.0.0", port=8000, log_level="WARNING", url=DEFAULT_URL)
+
+
+@click.group("baikalctl", invoke_without_command=True, context_settings={"auto_envvar_prefix": "BAIKAL"})
 @click.version_option(message=header)
 @click.option("-C", "--config-file", default=Path.home() / ".baikalctl", help="config file (default ~/.baikalctl)")
 @click.option("-d", "--debug", is_eager=True, is_flag=True, callback=_ehandler, help="debug mode")
 @click.option("-u", "--username", help="username (default: admin)")
 @click.option("-p", "--password", help="password")
-@click.option("-U", "--url", help="password")
-@click.option("-a", "--api", help="api url")
-@click.option("-A", "--address", help="server listen address (default: 127.0.0.1)")
+@click.option("-U", "--url", help="baikal server URL")
+@click.option("-a", "--api", help="api url (selects client mode)")
+@click.option("-A", "--address", help="server listen address (default: 0.0.0.0)")
 @click.option("-P", "--port", type=int, help="server listen port (default: 8000)")
-@click.option("-l", "--log-level", help="server log level (default: WARNING)")
+@click.option("-l", "--log-level", default="WARNING", help="server log level (default: WARNING)")
 @click.option("-v", "--verbose", is_flag=True, help="enable diagnostic output")
+@click.option("--show-config", is_flag=True, help="show configuration")
 @click.option(
     "--shell-completion",
     is_flag=False,
@@ -47,49 +54,80 @@ def _cleanup():
     help="configure shell completion",
 )
 @click.pass_context
-def cli(ctx, config_file, username, password, url, api, address, port, log_level, verbose, debug, shell_completion):
-    """baikalctl top-level help"""
+def cli(
+    ctx,
+    config_file,
+    username,
+    password,
+    url,
+    api,
+    address,
+    port,
+    log_level,
+    verbose,
+    debug,
+    shell_completion,
+    show_config,
+):
+    """baikalctl - admin CLI for baikal webdav/webcal server"""
+
+    if ctx.invoked_subcommand == 'version':
+        click.echo(__version__)
+        sys.exit(0)
+
+    cfgdata = {}
     cfgfile = Path(config_file)
     if cfgfile.is_file():
         if verbose:
-            click.echo(f"config_file={cfgfile}")
-        cfgdata = yaml.safe_load(cfgfile.read_text())
+            click.echo(f"Using config file {cfgfile}", err=True)
+        cfgtext = cfgfile.read_text()
+        if cfgtext:
+            cfgdata = yaml.safe_load(cfgfile.read_text())
+
+    for k, v in DEFAULTS.items():
+        cfgdata.setdefault(k, v)
+
+    try:
         if not url:
             url = cfgdata["url"]
         if not username:
-            username = cfgdata.get("username", "admin")
+            username = cfgdata["username"]
         if not password:
             password = cfgdata["password"]
         if not address:
-            address = cfgdata.get("address", "127.0.0.1")
+            address = cfgdata["address"]
         if not port:
-            port = int(cfgdata.get("port", 8000))
+            port = int(cfgdata["port"])
         if not log_level:
-            log_level = cfgdata.get("log_level", "WARNING")
-    if not username:
-        raise RuntimeError("username not specified")
-    if not password:
-        raise RuntimeError("password not specified")
-    if not url:
-        raise RuntimeError("URL not specified")
+            log_level = cfgdata["log_level"]
+    except KeyError as ex:
+        raise RuntimeError(f"Missing config value '{ex.args[0]}'")
 
-    if verbose:
-        click.echo(f"username={username}")
-        click.echo(f"password={'*'*len(password)}")
-        click.echo(f"url={url}")
-        click.echo(f"api={api}")
-        click.echo(f"address={address}")
-        click.echo(f"port={port}")
-        click.echo(f"log_level={log_level}")
-        click.echo(f"debug={debug}")
-        click.echo(f"verbose={verbose}")
+    if show_config:
+        click.echo(f"username: {username}")
+        click.echo(f"password: '{'*'*len(password)}'")
+        click.echo(f"url: {url}")
+        if api:
+            click.echo(f"api: {api}")
+        click.echo(f"address: {address}")
+        click.echo(f"port: {port}")
+        click.echo(f"log_level: {log_level}")
+        sys.exit(0)
+
+    if not ctx.invoked_subcommand:
+        click.echo(ctx.get_help(), err=True)
+        sys.exit(1)
+
+    baikal.log_level = log_level
+    baikal.verbose = verbose
+    baikal.header = header
 
     if api:
         baikal.url = api
         baikal.client = True
         baikal.verbose = verbose
     else:
-        baikal.startup(url, username, password, address, port, log_level, verbose)
+        baikal.startup(url, username, password, address, port)
         atexit.register(_cleanup)
     ctx.obj = baikal
 
@@ -149,6 +187,7 @@ def rmbook(ctx, username, name):
 @cli.command
 @click.pass_obj
 def server(ctx):
+    """API server"""
     click.echo(header)
     uvicorn.run(
         "baikalctl:app",
@@ -161,14 +200,22 @@ def server(ctx):
 @cli.command
 @click.pass_obj
 def reset(ctx):
+    """restart client driver"""
     click.echo(json.dumps(ctx.reset(), indent=2))
 
 
 @cli.command
 @click.pass_obj
 def version(ctx):
-    """version"""
+    """print version number"""
     click.echo(__version__)
+
+
+@cli.command
+@click.pass_obj
+def status(ctx):
+    """output status"""
+    click.echo(json.dumps(ctx.status(), indent=2))
 
 
 if __name__ == "__main__":

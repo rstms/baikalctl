@@ -33,7 +33,8 @@ docker/VERSION: VERSION
 build: depends docker/.build
 
 docker/.build: $(docker_deps) 
-	docker build $(build_opts) docker | tee build.log
+	docker build $(build_opts) docker 2>&1 | tee build.log
+	@grep -q ^ERROR build.log && exit 1 || true
 	docker tag $(image) $(image_tag):$(version)
 	touch $@
 
@@ -60,7 +61,7 @@ docker_opts =
 
 ### run docker image
 run:
-	docker compose $(docker_opts) up --force recreate baikalctl
+	docker compose $(docker_opts) up --force-recreate baikalctl
 
 ps:
 	docker compose ps 
@@ -69,7 +70,7 @@ start:
 	docker compose $(docker_opts) up --force-recreate -d baikalctl
 
 stop:
-	docker compose $(docker_opts) down baikalctl
+	docker compose $(docker_opts) down --timeout 3 baikalctl
 
 shell:
 	docker compose exec baikalctl /bin/bash

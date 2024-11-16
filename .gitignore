@@ -122,3 +122,5 @@ postactivate
 notes
 .password
 .env
+build.out
+build.err

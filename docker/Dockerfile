@@ -7,51 +7,55 @@ RUN apk add \
     firefox \
     xfce4 \
     xfce4-terminal \
+    py3-pip \
     pipx 
 
-RUN adduser xbot -D -s /bin/bash
+ARG USER=bot
+ARG UID=1000
+ARG GID=1000
 
-RUN echo "permit nopass keepenv xbot" >/etc/doas.conf
+RUN \
+    adduser ${USER} -D -s /bin/bash && \
+    echo "permit nopass keepenv ${USER}" >/etc/doas.conf
 
-RUN mkdir /home/xbot/.vnc
-COPY xstartup /home/xbot/.vnc/xstartup
+RUN mkdir /home/${USER}/.vnc
+COPY xstartup /home/${USER}/.vnc/xstartup
 
-RUN echo vncvnc | vncpasswd -f >/home/xbot/.vnc/passwd && \
-    chmod 700 /home/xbot/.vnc/xstartup && \
-    chmod 600 /home/xbot/.vnc/passwd && \
-    chown -R xbot:xbot /home/xbot/.vnc
+RUN \
+    echo vncvnc | vncpasswd -f >/home/${USER}/.vnc/passwd && \
+    chmod 700 /home/${USER}/.vnc/xstartup && \
+    chmod 600 /home/${USER}/.vnc/passwd && \
+    chown -R ${USER}:${USER} /home/${USER}/.vnc
 
-EXPOSE 5901
+#EXPOSE 5901
 EXPOSE 8000
 
-COPY --chmod=0755 client /usr/local/bin/client
-COPY --chmod=0755 server /usr/local/bin/server
+COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
 
-USER xbot
-WORKDIR /home/xbot
-RUN echo "export PATH=/home/xbot/.local/bin:$PATH" >>.bashrc
+USER ${USER}
+WORKDIR /home/${USER}
+RUN echo "export PATH=/home/${USER}/.local/bin:$PATH" >>.bashrc
+ENV PATH=/home/${USER}/.local/bin:${PATH}
 
-COPY --chmod=0444 VERSION VERSION
-
-ENV PATH=/home/xbot/.local/bin:${PATH}
+# ensure rebuild when version changes
+COPY --chmod=0666 VERSION VERSION
 
 ARG WHEEL
 ENV WHEEL=$WHEEL
-COPY --chmod=0644 $WHEEL .
-RUN pipx install -v $WHEEL 
+COPY --chmod=0644 ${WHEEL} .
 
-RUN which baikalctl
-RUN env BAIKAL_PASSWORD=. baikalctl --version || true
+RUN pipx install ${WHEEL} && rm ${WHEEL}
+#RUN pip install --user --break-system-packages $WHEEL
 
-RUN \
-    V="$(cat VERSION | head -1)"; \
-    B="$({ env BAIKAL_PASSWORD=. baikalctl --version || true; } | awk -F '[v ]*' '{print $2}' | head -1)"; \
-    echo "VERSION File: $V"; \
-    echo "Installed: $B"; \
-    if [ "$V" != "$B" ]; then echo "Version mismatch failure"; exit 1; fi
+RUN baikalctl --version
 
-ENV DISPLAY=:1
+# ensure VERSION file matches installed app version
+RUN [ $(head -1 VERSION) = $(baikalctl version) ]
 
-ENTRYPOINT ["/sbin/tini", "--"]
+# ensure VERSION arg match
+ARG VERSION
+RUN [ ${VERSION} = $(baikalctl version) ]
 
-CMD /usr/local/bin/server
+#ENTRYPOINT ["/sbin/tini", "--"]
+ENTRYPOINT ["/bin/sh", "-c", "/usr/local/bin/entrypoint"]
+CMD "server"

@@ -2,12 +2,14 @@ from typing import Annotated
 
 from fastapi import FastAPI, Form
 from pydantic import BaseModel
+import logging
 
 from .client import baikal
-from .version import __version__
 
 app = FastAPI()
 
+logging.basicConfig(level=baikal.log_level)
+logger = logging.getLogger("uvicorn")
 
 class User(BaseModel):
     username: str
@@ -21,9 +23,13 @@ class AddressBook(BaseModel):
     description: str
 
 
-@app.get("/version/")
-def get_version():
-    return __version__
+@app.on_event("startup")
+def startup_event():
+    logger.info(baikal.header)
+
+@app.get("/status/")
+def get_status():
+    return baikal.status()
 
 
 @app.post("/reset/")
