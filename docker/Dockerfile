@@ -1,21 +1,23 @@
 FROM alpine:latest
 
-RUN apk add \
-    bash \
-    tini \
+RUN apk upgrade --no-cache
+
+RUN apk add --no-cache \
     tigervnc \
     firefox \
     xfce4 \
-    xfce4-terminal \
-    py3-pip \
-    pipx 
+    py3-pip
+
+#    xfce4-terminal \
+
+RUN apk add --no-cache pipx
 
 ARG USER=bot
 ARG UID=1000
 ARG GID=1000
 
 RUN \
-    adduser ${USER} -D -s /bin/bash && \
+    adduser ${USER} -D -s /bin/sh && \
     echo "permit nopass keepenv ${USER}" >/etc/doas.conf
 
 RUN mkdir /home/${USER}/.vnc
@@ -30,11 +32,9 @@ RUN \
 #EXPOSE 5901
 EXPOSE 8000
 
-COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
-
 USER ${USER}
 WORKDIR /home/${USER}
-RUN echo "export PATH=/home/${USER}/.local/bin:$PATH" >>.bashrc
+#RUN echo "export PATH=/home/${USER}/.local/bin:$PATH" >.bashrc
 ENV PATH=/home/${USER}/.local/bin:${PATH}
 
 # ensure rebuild when version changes
@@ -44,10 +44,10 @@ ARG WHEEL
 ENV WHEEL=$WHEEL
 COPY --chmod=0644 ${WHEEL} .
 
-RUN pipx install ${WHEEL} && rm ${WHEEL}
-#RUN pip install --user --break-system-packages $WHEEL
-
-RUN baikalctl --version
+RUN \
+    pipx install ${WHEEL} && \
+    baikalctl --version && \
+    rm ${WHEEL}
 
 # ensure VERSION file matches installed app version
 RUN [ $(head -1 VERSION) = $(baikalctl version) ]
@@ -56,6 +56,9 @@ RUN [ $(head -1 VERSION) = $(baikalctl version) ]
 ARG VERSION
 RUN [ ${VERSION} = $(baikalctl version) ]
 
-#ENTRYPOINT ["/sbin/tini", "--"]
-ENTRYPOINT ["/bin/sh", "-c", "/usr/local/bin/entrypoint"]
-CMD "server"
+USER root
+COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
+USER ${USER}
+
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
+CMD ["server"]

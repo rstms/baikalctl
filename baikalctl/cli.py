@@ -2,6 +2,7 @@
 
 import atexit
 import json
+import logging
 import socket
 import sys
 from pathlib import Path
@@ -71,7 +72,7 @@ def cli(
 ):
     """baikalctl - admin CLI for baikal webdav/webcal server"""
 
-    if ctx.invoked_subcommand == 'version':
+    if ctx.invoked_subcommand == "version":
         click.echo(__version__)
         sys.exit(0)
 
@@ -93,7 +94,8 @@ def cli(
         if not username:
             username = cfgdata["username"]
         if not password:
-            password = cfgdata["password"]
+            if not api:
+                password = cfgdata["password"]
         if not address:
             address = cfgdata["address"]
         if not port:
@@ -107,10 +109,12 @@ def cli(
         click.echo(f"username: {username}")
         click.echo(f"password: '{'*'*len(password)}'")
         click.echo(f"url: {url}")
-        if api:
-            click.echo(f"api: {api}")
+        click.echo(f"api: {api}")
         click.echo(f"address: {address}")
         click.echo(f"port: {port}")
+        click.echo(f"log_level: {log_level}")
+        click.echo(f"verbose: {verbose}")
+        click.echo(f"debug: {debug}")
         click.echo(f"log_level: {log_level}")
         sys.exit(0)
 
@@ -118,17 +122,20 @@ def cli(
         click.echo(ctx.get_help(), err=True)
         sys.exit(1)
 
+    logging.basicConfig(level=baikal.log_level)
+
     baikal.log_level = log_level
+    baikal.debug = debug
     baikal.verbose = verbose
     baikal.header = header
 
     if api:
         baikal.url = api
         baikal.client = True
-        baikal.verbose = verbose
     else:
         baikal.startup(url, username, password, address, port)
         atexit.register(_cleanup)
+
     ctx.obj = baikal
 
 
@@ -188,7 +195,6 @@ def rmbook(ctx, username, name):
 @click.pass_obj
 def server(ctx):
     """API server"""
-    click.echo(header)
     uvicorn.run(
         "baikalctl:app",
         host=ctx.address,

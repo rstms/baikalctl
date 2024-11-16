@@ -1,16 +1,25 @@
-#!/bin/bash
+#!/bin/sh
+
 set -ue 
 
 cmd=
-if [ $# > 0 ]; then
+if [ $# -gt 0 ]; then
     cmd=$1
+fi
+
+if [ -n "${BAIKAL_SHOW_CONFIG:-}" ]; then
+    baikalctl --show-config
 fi
 
 if [ $cmd = 'server' ]; then
     export DISPLAY=:1
-    vncserver :1 >vncserver.log 2>&1 &
+    if [ -n "${BAIKAL_SHOW_VNCSERVER_LOG:-}" ]; then
+	vncserver :1 &
+    else
+	vncserver :1 >/dev/null 2>&1 &
+    fi
     baikalctl server
     pkill vncserver
 else
-    baikalctl "$@"
+    baikalctl --api http://localhost:8000 "$@"
 fi

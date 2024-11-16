@@ -73,7 +73,7 @@ stop:
 	docker compose $(docker_opts) down --timeout 3 baikalctl
 
 shell:
-	docker compose exec baikalctl /bin/bash
+	docker compose exec baikalctl /bin/sh
 
 tail:
 	while true; do { docker compose logs --follow baikalctl; sleep 3; }; done
@@ -82,3 +82,8 @@ restart:
 	$(MAKE) stop
 	$(MAKE) start
 
+prune:
+	docker system prune --all --force
+
+scan:
+	docker run -v /var/run/docker.sock:/var/run/docker.sock -v $$HOME/Library/Caches:/root/.cache/ aquasec/trivy:0.57.0 image baikalctl:latest

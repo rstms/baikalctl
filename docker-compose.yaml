@@ -4,14 +4,14 @@ services:
     restart: unless-stopped
     ports:
       - 127.0.0.1:8000:8000
-      - 0.0.0.0:5999:5901
     environment:
       BAIKAL_USERNAME:
       BAIKAL_PASSWORD:
       BAIKAL_URL:
       BAIKAL_ADDRESS:
       BAIKAL_PORT:
-      BAIKAL_API: 
       BAIKAL_LOG_LEVEL:
       BAIKAL_DEBUG:
       BAIKAL_VERBOSE:
+      BAIKAL_SHOW_CONFIG:
+      BAIKAL_SHOW_VNCSERVER_LOG:

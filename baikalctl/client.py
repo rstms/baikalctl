@@ -1,9 +1,9 @@
 # baikalctl client
 
+import logging
 import re
 
 import arrow
-import click
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -11,6 +11,9 @@ from selenium.webdriver.common.by import By
 from .version import __version__
 
 MIN_PASSWD_LEN = 8
+
+logger = logging.getLogger(__name__)
+
 
 class Client:
     def __init__(self):
@@ -20,14 +23,7 @@ class Client:
         self.header = "baikalctl v" + __version__
         self.log_level = "WARNING"
         self.verbose = False
-
-    def log(self, msg):
-        if self.verbose:
-            if self.client:
-                mode = "client"
-            else:
-                mode = "server"
-            click.echo(f"[{mode}] {msg}", err=True)
+        self.reset_time = None
 
     def startup(self, url, username, password, address, port):
         self.client = False
@@ -37,26 +33,27 @@ class Client:
         self.address = address
         self.port = port
         self.logged_in = False
-        self.log("startup")
+        logger.info("startup")
 
     def _load_driver(self):
         if not self.driver:
-            self.log("load_driver")
+            logger.info("load_driver")
             options = webdriver.FirefoxOptions()
             self.driver = webdriver.Firefox(options=options)
 
     def shutdown(self):
-        self.log("shutdown")
+        logger.info("shutdown")
         if self.logged_in:
             self._logout()
         if self.driver:
             self.driver.quit()
+            self.driver = None
 
     def _login(self):
         if self.logged_in:
             return
         self._load_driver()
-        self.log("login")
+        logger.info("login")
         self.driver.get(self.url + "/admin/")
         username_text = self.driver.find_element(by=By.ID, value="login")
         password_text = self.driver.find_element(by=By.ID, value="password")
@@ -72,7 +69,7 @@ class Client:
 
     def _logout(self):
         if self.logged_in:
-            self.log("logout")
+            logger.info("logout")
             self.driver.get(self.url + "/admin/")
             self.driver.find_element(by=By.LINK_TEXT, value="Logout").click()
             self.logged_in = False
@@ -93,7 +90,7 @@ class Client:
         return response.json()
 
     def list_users(self):
-        self.log("list_users")
+        logger.info("list_users")
         if self.client:
             return self._parse_response(requests.get(f"{self.url}/users/"))
         self._login()
@@ -131,7 +128,7 @@ class Client:
         return None
 
     def add_user(self, username, displayname, password):
-        self.log(f"add_user {username} {displayname} ************")
+        logger.info(f"add_user {username} {displayname} ************")
         err = self._validate_email(username)
         if err:
             return err
@@ -174,7 +171,7 @@ class Client:
         return -1, None, None, dict(error=f"not found: '{username}'")
 
     def delete_user(self, username):
-        self.log(f"delete_user {username}")
+        logger.info(f"delete_user {username}")
         if self.client:
             return self._parse_response(requests.delete(f"{self.url}/user/{username}/"))
         i, table, col, err = self._find_user_column(username)
@@ -189,7 +186,7 @@ class Client:
         return dict(error="not found: '{username}'")
 
     def list_address_books(self, username):
-        self.log(f"list_address_books {username}")
+        logger.info(f"list_address_books {username}")
         if self.client:
             return self._parse_response(requests.get(f"{self.url}/addressbooks/{username}/"))
         i, table, col, err = self._find_user_column(username)
@@ -205,7 +202,7 @@ class Client:
         return books
 
     def add_address_book(self, username, name, description):
-        self.log(f"add_address_book {username} {name} {description}")
+        logger.info(f"add_address_book {username} {name} {description}")
         err = self._validate_email(username)
         if err:
             return err
@@ -238,7 +235,7 @@ class Client:
         return dict(added_address_book=name)
 
     def delete_address_book(self, username, name):
-        self.log(f"delete_address_book {username} {name}")
+        logger.info(f"delete_address_book {username} {name}")
         if self.client:
             return self._parse_response(requests.delete(f"{self.url}/addressbook/{username}/{name}/"))
         i, table, col, err = self._find_user_column(username)
@@ -257,7 +254,7 @@ class Client:
         return dict(error=f"not found: '{name}'")
 
     def reset(self):
-        self.log("reset")
+        logger.info("reset")
         if self.client:
             return self._parse_response(requests.post(f"{self.url}/reset/"))
         self.shutdown()
@@ -268,20 +265,25 @@ class Client:
             baikal.address,
             baikal.port,
         )
+        self.reset_time = arrow.now()
         return dict(message="server reset")
 
     def status(self):
-        self.log("status")
+        logger.info("status")
         if self.client:
             return self._parse_response(requests.get(f"{self.url}/status/"))
         return dict(
-            name="baikalctl", version=__version__, driver=repr(self.driver), uptime=self.startup_time.humanize(),
+            name="baikalctl",
+            version=__version__,
+            driver=repr(self.driver),
+            uptime=self.startup_time.humanize(),
+            reset=self.reset_time.humanize() if self.reset_time else "never",
             url=self.url,
             username=self.username,
-            password=self.password,
+            password="*" * len(self.password),
             log_level=self.log_level,
             verbose=self.verbose,
-            header=self.header
+            header=self.header,
         )
 
 
