@@ -34,7 +34,7 @@ DEFAULT_URL = "http://caldav." + ".".join(socket.getfqdn().split(".")[1:]) + "/b
 DEFAULTS = dict(username="admin", address="0.0.0.0", port=8000, log_level="WARNING", url=DEFAULT_URL)
 
 
-@click.group("baikalctl", invoke_without_command=True, context_settings={"auto_envvar_prefix": "BAIKAL"})
+@click.group("baikalctl", invoke_without_command=True, context_settings={"auto_envvar_prefix": "BAIKALCTL"})
 @click.version_option(message=header)
 @click.option("-C", "--config-file", default=Path.home() / ".baikalctl", help="config file (default ~/.baikalctl)")
 @click.option("-d", "--debug", is_eager=True, is_flag=True, callback=_ehandler, help="debug mode")
@@ -94,8 +94,7 @@ def cli(
         if not username:
             username = cfgdata["username"]
         if not password:
-            if not api:
-                password = cfgdata["password"]
+            password = cfgdata.get("password", None)
         if not address:
             address = cfgdata["address"]
         if not port:
@@ -107,7 +106,7 @@ def cli(
 
     if show_config:
         click.echo(f"username: {username}")
-        click.echo(f"password: '{'*'*len(password)}'")
+        click.echo(f"password: {"'" + '*'*len(password) + "'" if password else None}")
         click.echo(f"url: {url}")
         click.echo(f"api: {api}")
         click.echo(f"address: {address}")
@@ -122,6 +121,7 @@ def cli(
         click.echo(ctx.get_help(), err=True)
         sys.exit(1)
 
+
     logging.basicConfig(level=baikal.log_level)
 
     baikal.log_level = log_level
@@ -133,6 +133,8 @@ def cli(
         baikal.url = api
         baikal.client = True
     else:
+        if not password: 
+            raise RuntimeError("Missing config value: 'password'")
         baikal.startup(url, username, password, address, port)
         atexit.register(_cleanup)
 

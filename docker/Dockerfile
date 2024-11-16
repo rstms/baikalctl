@@ -4,11 +4,9 @@ RUN apk upgrade --no-cache
 
 RUN apk add --no-cache \
     tigervnc \
+    ratpoison \
     firefox \
-    xfce4 \
     py3-pip
-
-#    xfce4-terminal \
 
 RUN apk add --no-cache pipx
 
@@ -24,17 +22,15 @@ RUN mkdir /home/${USER}/.vnc
 COPY xstartup /home/${USER}/.vnc/xstartup
 
 RUN \
-    echo vncvnc | vncpasswd -f >/home/${USER}/.vnc/passwd && \
+    dd if=/dev/random count=1 | base64 | head -1 | cut -b-32 | vncpasswd -f >/home/${USER}/.vnc/passwd && \
     chmod 700 /home/${USER}/.vnc/xstartup && \
     chmod 600 /home/${USER}/.vnc/passwd && \
     chown -R ${USER}:${USER} /home/${USER}/.vnc
 
-#EXPOSE 5901
 EXPOSE 8000
 
 USER ${USER}
 WORKDIR /home/${USER}
-#RUN echo "export PATH=/home/${USER}/.local/bin:$PATH" >.bashrc
 ENV PATH=/home/${USER}/.local/bin:${PATH}
 
 # ensure rebuild when version changes
@@ -58,7 +54,11 @@ RUN [ ${VERSION} = $(baikalctl version) ]
 
 USER root
 COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
+COPY --chmod=0755 show-config /usr/local/bin/show-config
+COPY --chmod=0755 docker-compose /usr/local/bin/docker-compose
 USER ${USER}
+
+COPY --chmod=0644 docker-compose.yaml /home/${USER}/
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 CMD ["server"]

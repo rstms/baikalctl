@@ -33,9 +33,12 @@ docker/VERSION: VERSION
 build: depends docker/.build
 
 docker/.build: $(docker_deps) 
+	cp docker-compose.yaml docker
 	docker build $(build_opts) docker 2>&1 | tee build.log
 	@grep -q ^ERROR build.log && exit 1 || true
 	docker tag $(image) $(image_tag):$(version)
+	docker tag $(image) rstms/$(image_tag):$(version)
+	docker tag $(image) rstms/$(image_tag):latest
 	touch $@
 
 ### rebuild image

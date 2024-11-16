@@ -7,19 +7,24 @@ if [ $# -gt 0 ]; then
     cmd=$1
 fi
 
-if [ -n "${BAIKAL_SHOW_CONFIG:-}" ]; then
-    baikalctl --show-config
-fi
-
-if [ $cmd = 'server' ]; then
-    export DISPLAY=:1
-    if [ -n "${BAIKAL_SHOW_VNCSERVER_LOG:-}" ]; then
-	vncserver :1 &
-    else
-	vncserver :1 >/dev/null 2>&1 &
-    fi
-    baikalctl server
-    pkill vncserver
-else
-    baikalctl --api http://localhost:8000 "$@"
-fi
+case $cmd in
+    server)
+	export DISPLAY=:1
+	if [ -n "${BAIKALCTL_LOG_XVNC:-}" ]; then
+	    vncserver :1 &
+	else
+	    vncserver :1 >/dev/null 2>&1 &
+	fi
+	baikalctl server
+	pkill vncserver
+	;;
+    docker-compose)
+	cat docker-compose.yaml
+	;;
+    show-config)
+	baikalctl --show-config
+	;;
+    *)
+	baikalctl --api http://localhost:${BAIKALCTL_PORT:-8000} "$@"
+	;;
+esac
