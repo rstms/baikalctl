@@ -57,8 +57,6 @@ RUN [ ${VERSION} = $(baikalctl version) ]
 
 USER root
 COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
-COPY --chmod=0755 show-config /usr/local/bin/show-config
-COPY --chmod=0755 docker-compose /usr/local/bin/docker-compose
 USER ${USER}
 ENV DISPLAY=:1
 

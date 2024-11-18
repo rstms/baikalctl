@@ -93,6 +93,8 @@ def cli(
         click.echo(__version__)
         sys.exit(0)
 
+    debug = ctx.obj['debug']
+
     cfgdata = {}
     cfgfile = Path(config_file)
     if cfgfile.is_file():
@@ -157,6 +159,7 @@ def cli(
     baikal.debug = debug
     baikal.verbose = verbose
     baikal.header = header
+
     if profile_create_timeout is not None:
         Profile.CREATE_TIMEOUT = profile_create_timeout
 

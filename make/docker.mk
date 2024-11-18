@@ -52,6 +52,15 @@ docker-clean:
 ### docker-sterile
 docker-sterile: docker-clean
 
+netboot = netboot.rstms.net
+tarball = $(image_tag)_$(version).tgz
+
+### upload image to netboot server
+upload:
+	docker image save $(image_tag):$(version) -o $(tarball)
+	scp $(tarball) $(netboot):docker/images/$(tarball)
+	ssh $(netboot) chmod 0644 docker/images/$(tarball)
+	rm $(tarball)
 
 ### push image to docker registry
 push: rebuild release

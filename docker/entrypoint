@@ -7,24 +7,21 @@ if [ $# -gt 0 ]; then
     cmd=$1
 fi
 
+serve() {
+    export DISPLAY=:1
+    if [ -n "${BAIKALCTL_LOG_XVNC:-}" ]; then
+	vncserver :1 &
+    else
+	vncserver :1 >/dev/null 2>&1 &
+    fi
+    baikalctl server
+    pkill vncserver
+}
+
 case $cmd in
-    server)
-	export DISPLAY=:1
-	if [ -n "${BAIKALCTL_LOG_XVNC:-}" ]; then
-	    vncserver :1 &
-	else
-	    vncserver :1 >/dev/null 2>&1 &
-	fi
-	baikalctl server
-	pkill vncserver
-	;;
-    docker-compose)
-	cat docker-compose.yaml
-	;;
-    show-config)
-	baikalctl --show-config
-	;;
-    *)
-	baikalctl --api http://localhost:${BAIKALCTL_PORT:-8000} "$@"
-	;;
+    server) serve ;;
+    docker-compose) cat docker-compose.yaml ;;
+    show-config) baikalctl --show-config ;;
+    client) shift; baikalctl --api http://127.0.0.1:${BAIKALCTL_PORT:-8000} "$@" ;;
+    *) "@" ;;
 esac

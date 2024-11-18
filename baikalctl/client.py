@@ -39,7 +39,6 @@ class Client:
         self.port = port
         self.logged_in = False
         self.profile = None
-        self.cert = None
         self.profile = Profile(self.profile_dir)
         self.profile_dir = self.profile.dir
         self.cert_file = cert_file
@@ -303,7 +302,7 @@ class Client:
             reset=self.reset_time.humanize() if self.reset_time else "never",
             profile_dir=self.profile.name if self.profile else None,
             certificates=list(self.profile.ListCerts().keys()) if self.profile else None,
-            certificate_loaded=self.cert,
+            certificate_loaded=self.cert_file,
             url=self.url,
             username=self.username,
             password="*" * len(self.password),
