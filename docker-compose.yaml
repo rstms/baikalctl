@@ -5,7 +5,7 @@ services:
     ports:
       - 127.0.0.1:8000:8000
     volumes:
-      - ./cert:/home/baikalctl/cert
+      - ./certs:/home/baikalctl/certs
     environment:
       BAIKALCTL_USERNAME:
       BAIKALCTL_PASSWORD:
@@ -16,3 +16,7 @@ services:
       BAIKALCTL_DEBUG:
       BAIKALCTL_VERBOSE:
       BAIKALCTL_XVNC_LOG:
+      BAIKALCTL_PROFILE:
+      BAIKALCTL_CERT:
+      BAIKALCTL_KEY:
+

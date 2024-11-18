@@ -301,7 +301,7 @@ class Client:
             reset=self.reset_time.humanize() if self.reset_time else "never",
             profile_dir=self.profile.name if self.profile else None,
             certificates=list(self.profile.ListCerts().keys()) if self.profile else None,
-            certificate_loaded = self.cert,
+            certificate_loaded=self.cert,
             url=self.url,
             username=self.username,
             password="*" * len(self.password),

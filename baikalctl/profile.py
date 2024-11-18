@@ -92,10 +92,10 @@ class Profile:
         certlist = mklist(subprocess.check_output(shlex.split(f"certutil -L -d sql:{str(self.dir)}")))
         certs = {}
         for certline in certlist:
-            fields=certline.split()
-            key=' '.join(fields[:-1])
-            value=fields[-1]
-            certs[key]=value
+            fields = certline.split()
+            key = " ".join(fields[:-1])
+            value = fields[-1]
+            certs[key] = value
         return certs
 
     def AddCert(self, cert, key=None):
@@ -103,10 +103,10 @@ class Profile:
         logger.info("Adding client certificate...")
         with tempfile.NamedTemporaryFile(suffix=".p12") as tf:
             if pathlib.Path(cert).suffix != ".p12":
-                cmd=f"openssl pkcs12 -export -in {str(cert)} -inkey {str(key)} -out {tf.name} -passout pass:"
+                cmd = f"openssl pkcs12 -export -in {str(cert)} -inkey {str(key)} -out {tf.name} -passout pass:"
                 run(cmd)
                 cert = tf.name
-            cmd=f"pk12util -i {cert} -n '{certName}' -d sql:{str(self.dir)} -W ''"
+            cmd = f"pk12util -i {cert} -n '{certName}' -d sql:{str(self.dir)} -W ''"
             run(cmd)
         logger.info(f"Certificate {certName} added to profile {self.name}.")
         return certName
