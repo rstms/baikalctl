@@ -44,24 +44,25 @@ def commonName(cert):
         cmd = f"openssl x509 -in {pemCert} -noout -subject"
         out = subprocess.check_output(shlex.split(cmd))
         out = out.decode().strip()
-        prefix, _, name = out.partition(" = ")
-        if prefix != "subject=CN":
-            raise RuntimeError("Failed to parse subject CN from certificate {cert}")
-        return name
+        if out.lower().startswith("subject=cn"):
+            prefix, _, name = out.partition("=CN")
+            name = name.strip(" =")
+            return name
+        raise RuntimeError(f"Failed to parse subject CN from certificate {cert} {repr(out)}")
 
 
 class Profile:
 
     CREATE_TIMEOUT = 15
     STABILIZE = 2
-    DEFAULT_PROFILE_DIR = pathlib.Path.home() / ".cache" / "baikalctl" / "profile"
+    DEFAULT_DIR = pathlib.Path.home() / ".cache" / "baikalctl" / "profile"
 
     def __init__(self, dir=None, name=None):
         if name is None:
             name = "default"
         self.name = name
         if dir is None:
-            dir = self.DEFAULT_PROFILE_DIR
+            dir = self.DEFAULT_DIR
         dir.mkdir(parents=True, exist_ok=True)
         self.dir = dir
         if countFiles(self.dir) < 3:

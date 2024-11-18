@@ -6,7 +6,9 @@ RUN apk add --no-cache \
     tigervnc \
     ratpoison \
     firefox \
-    py3-pip
+    py3-pip \
+    nss-tools \
+    openssl
 
 RUN apk add --no-cache pipx
 
@@ -57,13 +59,11 @@ USER root
 COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
 COPY --chmod=0755 show-config /usr/local/bin/show-config
 COPY --chmod=0755 docker-compose /usr/local/bin/docker-compose
-RUN apk add nss-tools openssl
 USER ${USER}
 ENV DISPLAY=:1
-#RUN firefox --headless --createprofile "biakalctl /home/${USER}/.cache/baikalctl/profile"
-#RUN firefox --profile .cache/baikalctl/profile -headless --first-startup & sleep 5 && pkill firefox
-RUN env BAIKALCTL_PASSWORD=. baikalctl status
-RUN ls .cache/baikalctl/profile
+
+# first run creates firefox profile
+RUN env BAIKALCTL_PASSWORD=. baikalctl --debug --verbose --log-level DEBUG status
 
 COPY --chmod=0644 docker-compose.yaml /home/${USER}/
 

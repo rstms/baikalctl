@@ -2,7 +2,6 @@
 
 import logging
 import re
-from pathlib import Path
 
 import arrow
 import requests
@@ -28,9 +27,7 @@ class Client:
         self.log_level = "WARNING"
         self.verbose = False
         self.reset_time = None
-        self.profile_dir = Path.home() / ".cache/baikalctl/profile"
-        if not self.profile_dir.is_dir():
-            raise RuntimeError("missing profile directory: {{str(self.profile_dir)}}")
+        self.profile_dir = Profile.DEFAULT_DIR
 
     def startup(self, url, username, password, address, port, profile_dir, cert_file, key_file):
         logger.info("startup")
@@ -43,11 +40,12 @@ class Client:
         self.logged_in = False
         self.profile = None
         self.cert = None
-        if profile_dir is not None:
-            self.profile = Profile(self.profile_dir)
-            if cert_file is not None:
-                self.profile.AddCert(cert_file, key_file)
-                self.cert = cert_file
+        self.profile = Profile(self.profile_dir)
+        self.profile_dir = self.profile.dir
+        self.cert_file = cert_file
+        self.key_file = key_file
+        if cert_file is not None:
+            self.profile.AddCert(cert_file, key_file)
 
     def _load_driver(self):
         if not self.driver:
@@ -285,7 +283,11 @@ class Client:
             baikal.password,
             baikal.address,
             baikal.port,
+            baikal.profile_dir,
+            baikal.cert_file,
+            baikal.key_file,
         )
+
         self.reset_time = arrow.now()
         return dict(message="server reset")
 

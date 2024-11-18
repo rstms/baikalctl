@@ -38,7 +38,7 @@ DEFAULTS = dict(
     port=8000,
     log_level="WARNING",
     url=DEFAULT_URL,
-    profile=Profile.DEFAULT_PROFILE_DIR,
+    profile_dir=Profile.DEFAULT_DIR,
     profile_create_timeout=Profile.CREATE_TIMEOUT,
 )
 
@@ -56,7 +56,7 @@ DEFAULTS = dict(
 @click.option("-l", "--log-level", default="WARNING", help="server log level (default: WARNING)")
 @click.option("-v", "--verbose", is_flag=True, help="enable diagnostic output")
 @click.option("--profile-create-timeout", help="profile directory")
-@click.option("--profile", help="profile directory")
+@click.option("--profile-dir", help="profile directory")
 @click.option("--cert", help="cient certificate file")
 @click.option("--key", help="client certificate key file")
 @click.option("--show-config", is_flag=True, help="show configuration")
@@ -77,7 +77,7 @@ def cli(
     api,
     address,
     port,
-    profile,
+    profile_dir,
     cert,
     key,
     profile_create_timeout,
@@ -118,14 +118,14 @@ def cli(
             port = int(cfgdata["port"])
         if not log_level:
             log_level = cfgdata["log_level"]
-        if not profile:
-            profile = cfgdata["profile"]
+        if not profile_dir:
+            profile_dir = cfgdata["profile_dir"]
         if not cert:
             cert = cfgdata.get("cert", None)
         if not key:
             key = cfgdata.get("key", None)
         if not profile_create_timeout:
-            key = cfgdata["profile_create_timeout"]
+            profile_create_timeout = cfgdata["profile_create_timeout"]
 
     except KeyError as ex:
         raise RuntimeError(f"Missing config value '{ex.args[0]}'")
@@ -137,7 +137,7 @@ def cli(
         click.echo(f"api: {api}")
         click.echo(f"address: {address}")
         click.echo(f"port: {port}")
-        click.echo(f"profile: {profile}")
+        click.echo(f"profile_dir: {profile_dir}")
         click.echo(f"cert: {cert}")
         click.echo(f"key: {key}")
         click.echo(f"log_level: {log_level}")
@@ -157,7 +157,8 @@ def cli(
     baikal.debug = debug
     baikal.verbose = verbose
     baikal.header = header
-    Profile.CREATE_TIMEOUT = profile_create_timeout
+    if profile_create_timeout is not None:
+        Profile.CREATE_TIMEOUT = profile_create_timeout
 
     if api:
         baikal.url = api
@@ -165,7 +166,7 @@ def cli(
     else:
         if not password:
             raise RuntimeError("Missing config value: 'password'")
-        baikal.startup(url, username, password, address, port, profile, cert, key)
+        baikal.startup(url, username, password, address, port, profile_dir, cert, key)
         atexit.register(_cleanup)
 
     ctx.obj = baikal
