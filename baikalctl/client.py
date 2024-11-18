@@ -11,7 +11,7 @@ from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 
-from .profile import Profile
+from .firefox_profile import Profile
 from .version import __version__
 
 MIN_PASSWD_LEN = 8

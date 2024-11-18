@@ -14,6 +14,7 @@ import yaml
 
 from .client import baikal
 from .exception_handler import ExceptionHandler
+from .firefox_profile import Profile
 from .shell import _shell_completion
 from .version import __timestamp__, __version__
 
@@ -30,10 +31,15 @@ def _cleanup():
 
 
 DEFAULT_URL = "http://caldav." + ".".join(socket.getfqdn().split(".")[1:]) + "/baikal"
-DEFAULT_PROFILE_DIR = Path.home() / ".profile"
 
 DEFAULTS = dict(
-    username="admin", address="0.0.0.0", port=8000, log_level="WARNING", url=DEFAULT_URL, profile=DEFAULT_PROFILE_DIR
+    username="admin",
+    address="0.0.0.0",
+    port=8000,
+    log_level="WARNING",
+    url=DEFAULT_URL,
+    profile=Profile.DEFAULT_PROFILE_DIR,
+    profile_create_timeout=Profile.CREATE_TIMEOUT,
 )
 
 
@@ -49,6 +55,7 @@ DEFAULTS = dict(
 @click.option("-P", "--port", type=int, help="server listen port (default: 8000)")
 @click.option("-l", "--log-level", default="WARNING", help="server log level (default: WARNING)")
 @click.option("-v", "--verbose", is_flag=True, help="enable diagnostic output")
+@click.option("--profile-create-timeout", help="profile directory")
 @click.option("--profile", help="profile directory")
 @click.option("--cert", help="cient certificate file")
 @click.option("--key", help="client certificate key file")
@@ -73,6 +80,7 @@ def cli(
     profile,
     cert,
     key,
+    profile_create_timeout,
     log_level,
     verbose,
     debug,
@@ -116,6 +124,8 @@ def cli(
             cert = cfgdata.get("cert", None)
         if not key:
             key = cfgdata.get("key", None)
+        if not profile_create_timeout:
+            key = cfgdata["profile_create_timeout"]
 
     except KeyError as ex:
         raise RuntimeError(f"Missing config value '{ex.args[0]}'")
@@ -134,6 +144,7 @@ def cli(
         click.echo(f"verbose: {verbose}")
         click.echo(f"debug: {debug}")
         click.echo(f"log_level: {log_level}")
+        click.echo(f"profile_create_timeout: {profile_create_timeout}")
         sys.exit(0)
 
     if not ctx.invoked_subcommand:
@@ -146,6 +157,7 @@ def cli(
     baikal.debug = debug
     baikal.verbose = verbose
     baikal.header = header
+    Profile.CREATE_TIMEOUT = profile_create_timeout
 
     if api:
         baikal.url = api

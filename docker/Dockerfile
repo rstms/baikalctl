@@ -60,8 +60,9 @@ COPY --chmod=0755 docker-compose /usr/local/bin/docker-compose
 RUN apk add nss-tools openssl
 USER ${USER}
 ENV DISPLAY=:1
-RUN firefox --headless --createprofile "biakalctl /home/${USER}/.cache/baikalctl/profile"
-RUN firefox --profile .cache/baikalctl/profile -headless --first-startup & sleep 5 && pkill firefox
+#RUN firefox --headless --createprofile "biakalctl /home/${USER}/.cache/baikalctl/profile"
+#RUN firefox --profile .cache/baikalctl/profile -headless --first-startup & sleep 5 && pkill firefox
+RUN env BAIKALCTL_PASSWORD=. baikalctl status
 RUN ls .cache/baikalctl/profile
 
 COPY --chmod=0644 docker-compose.yaml /home/${USER}/

@@ -7,9 +7,6 @@ import subprocess
 import tempfile
 import time
 
-TIMEOUT = 15
-STABILIZE = 2
-
 logger = logging.getLogger(__name__)
 
 
@@ -54,12 +51,17 @@ def commonName(cert):
 
 
 class Profile:
+
+    CREATE_TIMEOUT = 15
+    STABILIZE = 2
+    DEFAULT_PROFILE_DIR = pathlib.Path.home() / ".cache" / "baikalctl" / "profile"
+
     def __init__(self, dir=None, name=None):
         if name is None:
             name = "default"
         self.name = name
         if dir is None:
-            dir = pathlib.Path.home() / ".cache" / "baikalctl" / "profiles" / name
+            dir = self.DEFAULT_PROFILE_DIR
         dir.mkdir(parents=True, exist_ok=True)
         self.dir = dir
         if countFiles(self.dir) < 3:
@@ -69,10 +71,10 @@ class Profile:
         logger.info("Creating profile...")
         run(f"/usr/bin/firefox --headless --createprofile '{self.name} {self.dir}'")
         proc = subprocess.Popen(shlex.split(f"/usr/bin/firefox --headless --profile {self.dir} --first-startup"))
-        timeout_tick = time.time() + TIMEOUT
+        timeout_tick = time.time() + self.CREATE_TIMEOUT
         stable = 0
         lastcount = 0
-        while stable <= STABILIZE:
+        while stable <= self.STABILIZE:
             if time.time() > timeout_tick:
                 raise RuntimeError("timeout waiting for profile init")
             if proc.poll() is not None:

@@ -2,7 +2,7 @@ import logging
 
 import pytest
 
-from baikalctl.profile import Profile, countFiles, run
+from baikalctl.firefox_profile import Profile, countFiles, run
 
 logger = logging.getLogger(__name__)
 logger.setLevel("DEBUG")
