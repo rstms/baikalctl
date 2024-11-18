@@ -2,12 +2,16 @@
 
 import logging
 import re
+from pathlib import Path
 
 import arrow
 import requests
 from selenium import webdriver
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 
+from .profile import Profile
 from .version import __version__
 
 MIN_PASSWD_LEN = 8
@@ -24,8 +28,12 @@ class Client:
         self.log_level = "WARNING"
         self.verbose = False
         self.reset_time = None
+        self.profile_dir = Path.home() / ".cache/baikalctl/profile"
+        if not self.profile_dir.is_dir():
+            raise RuntimeError("missing profile directory: {{str(self.profile_dir)}}")
 
-    def startup(self, url, username, password, address, port):
+    def startup(self, url, username, password, address, port, profile_dir, cert_file, key_file):
+        logger.info("startup")
         self.client = False
         self.url = url
         self.username = username
@@ -33,13 +41,21 @@ class Client:
         self.address = address
         self.port = port
         self.logged_in = False
-        logger.info("startup")
+        self.profile = None
+        self.cert = None
+        if profile_dir is not None:
+            self.profile = Profile(self.profile_dir)
+            if cert_file is not None:
+                self.profile.AddCert(cert_file, key_file)
+                self.cert = cert_file
 
     def _load_driver(self):
         if not self.driver:
             logger.info("load_driver")
-            options = webdriver.FirefoxOptions()
-            self.driver = webdriver.Firefox(options=options)
+            self.firefox_options = webdriver.FirefoxOptions()
+            self.firefox_options.profile = FirefoxProfile(self.profile.dir)
+            self.firefox_options.profile.set_preference("security.default_personal_cert", "Select Automatically")
+            self.driver = webdriver.Firefox(options=self.firefox_options)
 
     def shutdown(self):
         logger.info("shutdown")
@@ -54,7 +70,10 @@ class Client:
             return
         self._load_driver()
         logger.info("login")
-        self.driver.get(self.url + "/admin/")
+        try:
+            self.driver.get(self.url + "/admin/")
+        except WebDriverException as ex:
+            return dict(error=ex.msg)
         username_text = self.driver.find_element(by=By.ID, value="login")
         password_text = self.driver.find_element(by=By.ID, value="password")
         authenticate_button = self.driver.find_element(by=By.TAG_NAME, value="button")
@@ -93,7 +112,9 @@ class Client:
         logger.info("list_users")
         if self.client:
             return self._parse_response(requests.get(f"{self.url}/users/"))
-        self._login()
+        ret = self._login()
+        if ret:
+            return ret
         self._select_user_page()
         users_cols = self.driver.find_elements(by=By.CLASS_NAME, value="col-username")
         ret = {}
@@ -278,6 +299,9 @@ class Client:
             driver=repr(self.driver),
             uptime=self.startup_time.humanize(),
             reset=self.reset_time.humanize() if self.reset_time else "never",
+            profile_dir=self.profile.name if self.profile else None,
+            certificates=list(self.profile.ListCerts().keys()) if self.profile else None,
+            certificate_loaded = self.cert,
             url=self.url,
             username=self.username,
             password="*" * len(self.password),

@@ -30,8 +30,11 @@ def _cleanup():
 
 
 DEFAULT_URL = "http://caldav." + ".".join(socket.getfqdn().split(".")[1:]) + "/baikal"
+DEFAULT_PROFILE_DIR = Path.home() / ".profile"
 
-DEFAULTS = dict(username="admin", address="0.0.0.0", port=8000, log_level="WARNING", url=DEFAULT_URL)
+DEFAULTS = dict(
+    username="admin", address="0.0.0.0", port=8000, log_level="WARNING", url=DEFAULT_URL, profile=DEFAULT_PROFILE_DIR
+)
 
 
 @click.group("baikalctl", invoke_without_command=True, context_settings={"auto_envvar_prefix": "BAIKALCTL"})
@@ -46,6 +49,9 @@ DEFAULTS = dict(username="admin", address="0.0.0.0", port=8000, log_level="WARNI
 @click.option("-P", "--port", type=int, help="server listen port (default: 8000)")
 @click.option("-l", "--log-level", default="WARNING", help="server log level (default: WARNING)")
 @click.option("-v", "--verbose", is_flag=True, help="enable diagnostic output")
+@click.option("--profile", help="profile directory")
+@click.option("--cert", help="cient certificate file")
+@click.option("--key", help="client certificate key file")
 @click.option("--show-config", is_flag=True, help="show configuration")
 @click.option(
     "--shell-completion",
@@ -64,6 +70,9 @@ def cli(
     api,
     address,
     port,
+    profile,
+    cert,
+    key,
     log_level,
     verbose,
     debug,
@@ -101,6 +110,13 @@ def cli(
             port = int(cfgdata["port"])
         if not log_level:
             log_level = cfgdata["log_level"]
+        if not profile:
+            profile = cfgdata["profile"]
+        if not cert:
+            cert = cfgdata.get("cert", None)
+        if not key:
+            key = cfgdata.get("key", None)
+
     except KeyError as ex:
         raise RuntimeError(f"Missing config value '{ex.args[0]}'")
 
@@ -111,6 +127,9 @@ def cli(
         click.echo(f"api: {api}")
         click.echo(f"address: {address}")
         click.echo(f"port: {port}")
+        click.echo(f"profile: {profile}")
+        click.echo(f"cert: {cert}")
+        click.echo(f"key: {key}")
         click.echo(f"log_level: {log_level}")
         click.echo(f"verbose: {verbose}")
         click.echo(f"debug: {debug}")
@@ -120,7 +139,6 @@ def cli(
     if not ctx.invoked_subcommand:
         click.echo(ctx.get_help(), err=True)
         sys.exit(1)
-
 
     logging.basicConfig(level=baikal.log_level)
 
@@ -133,9 +151,9 @@ def cli(
         baikal.url = api
         baikal.client = True
     else:
-        if not password: 
+        if not password:
             raise RuntimeError("Missing config value: 'password'")
-        baikal.startup(url, username, password, address, port)
+        baikal.startup(url, username, password, address, port, profile, cert, key)
         atexit.register(_cleanup)
 
     ctx.obj = baikal

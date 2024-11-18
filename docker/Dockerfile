@@ -39,6 +39,7 @@ COPY --chmod=0666 VERSION VERSION
 ARG WHEEL
 ENV WHEEL=$WHEEL
 COPY --chmod=0644 ${WHEEL} .
+RUN mkdir -p .cache/baikalctl/profile
 
 RUN \
     pipx install ${WHEEL} && \
@@ -56,7 +57,12 @@ USER root
 COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
 COPY --chmod=0755 show-config /usr/local/bin/show-config
 COPY --chmod=0755 docker-compose /usr/local/bin/docker-compose
+RUN apk add nss-tools openssl
 USER ${USER}
+ENV DISPLAY=:1
+RUN firefox --headless --createprofile "biakalctl /home/${USER}/.cache/baikalctl/profile"
+RUN firefox --profile .cache/baikalctl/profile -headless --first-startup & sleep 5 && pkill firefox
+RUN ls .cache/baikalctl/profile
 
 COPY --chmod=0644 docker-compose.yaml /home/${USER}/
 
