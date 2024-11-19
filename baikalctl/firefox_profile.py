@@ -53,7 +53,7 @@ def commonName(cert):
 
 class Profile:
 
-    CREATE_TIMEOUT = 15
+    CREATE_TIMEOUT = 30
     STABILIZE = 2
     DEFAULT_DIR = pathlib.Path.home() / ".cache" / "baikalctl" / "profile"
 
