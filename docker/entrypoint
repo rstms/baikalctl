@@ -23,5 +23,5 @@ case $cmd in
     docker-compose) cat docker-compose.yaml ;;
     show-config) baikalctl --show-config ;;
     client) shift; baikalctl --api http://127.0.0.1:${BAIKALCTL_PORT:-8000} "$@" ;;
-    *) "@" ;;
+    *) "$@" ;;
 esac
