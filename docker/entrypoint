@@ -9,12 +9,14 @@ fi
 
 serve() {
     export DISPLAY=:1
-    if [ -n "${BAIKALCTL_LOG_XVNC:-}" ]; then
+    if [ -n "${BAIKALCTL_XVNC_VERBOSE:-}" ]; then
+	echo vncserver logging enabled
 	vncserver :1 &
     else
+	echo vncserver logging disabled
 	vncserver :1 >/dev/null 2>&1 &
     fi
-    baikalctl server
+    baikalctl --address 127.0.0.1 server
     pkill vncserver
 }
 

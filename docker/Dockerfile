@@ -28,7 +28,8 @@ RUN \
     dd if=/dev/random count=1 | base64 | head -1 | cut -b-32 | vncpasswd -f >/home/${USER}/.vnc/passwd && \
     chmod 700 /home/${USER}/.vnc/xstartup && \
     chmod 600 /home/${USER}/.vnc/passwd && \
-    chown -R ${USER}:${USER} /home/${USER}/.vnc
+    chown -R ${USER}:${USER} /home/${USER}/.vnc && \
+    echo "localhost" >/home/${USER}/.vnc/config
 
 EXPOSE 8000
 
@@ -59,8 +60,13 @@ ARG VERSION
 RUN [ ${VERSION} = $(baikalctl version) ]
 
 USER root
+
 COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
 RUN pip cache purge && rm -rf /root/.cache/pipx
+
+# dev/test shell environment
+#RUN apk add doas man-pages mandoc mandoc-apropos docs && echo "permit keepenv nopass ${USER}" >>/etc/doas.conf
+
 USER ${USER}
 ENV DISPLAY=:1
 
@@ -68,6 +74,7 @@ ENV DISPLAY=:1
 RUN env BAIKALCTL_PASSWORD=. baikalctl --debug --verbose --log-level DEBUG status
 
 COPY --chmod=0644 docker-compose.yaml /home/${USER}/
+
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 CMD ["server"]
