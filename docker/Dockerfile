@@ -8,11 +8,12 @@ RUN apk add --no-cache \
     firefox \
     py3-pip \
     nss-tools \
-    openssl
+    openssl \
+    pipx && \
+    apk cache clean && \
+    rm -rf /var/cache/apk
 
-RUN apk add --no-cache pipx
-
-ARG USER=bot
+ARG USER=baikalctl
 ARG UID=1000
 ARG GID=1000
 
@@ -46,7 +47,9 @@ RUN mkdir -p .cache/baikalctl/profile
 RUN \
     pipx install ${WHEEL} && \
     baikalctl --version && \
-    rm ${WHEEL}
+    rm ${WHEEL} && \
+    pip cache purge && \
+    rm -rf /home/${USER}/.cache/pipx
 
 # ensure VERSION file matches installed app version
 RUN [ $(head -1 VERSION) = $(baikalctl version) ]
@@ -57,6 +60,7 @@ RUN [ ${VERSION} = $(baikalctl version) ]
 
 USER root
 COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
+RUN pip cache purge && rm -rf /root/.cache/pipx
 USER ${USER}
 ENV DISPLAY=:1
 
