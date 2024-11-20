@@ -23,18 +23,28 @@ services:
     expose:
       - "8000"
     depends_on:
-      - proxy
+      - baikalctl_proxy
     hostname: baikalctl
 
-  proxy:
+  baikalctl_proxy:
     image: rstms/baikalctl_proxy:${BAIKALCTL_VERSION:-latest}
     build:
       context: proxy
     restart: unless-stopped
+    environment:
+      BAIKALCTL_FQDN:
     volumes:
       - type: bind
-        source: /etc/ssl
-        target: /etc/nginx/ssl
+        source: /etc/ssl/${BAIKALCTL_FQDN}.fullchain.pem
+        target: /etc/ssl/${BAIKALCTL_FQDN}.fullchain.pem
+        read_only: true
+      - type: bind
+        source: /etc/ssl/private/${BAIKALCTL_FQDN}.key
+        target: /etc/ssl/private/${BAIKALCTL_FQDN}.key
+        read_only: true
+      - type: bind
+        source: /etc/ssl/keymaster.pem
+        target: /etc/ssl/keymaster.pem
         read_only: true
       - type: bind
         source: /var/www/acme

@@ -1,4 +1,4 @@
-#
+#proxy 
 # docker makefile
 #
  
@@ -15,16 +15,7 @@ docker_wheel := $(notdir $(wheel))
 proxy_tag := $(project)_proxy
 proxy_image := $(proxy_tag):latest
 
-build_opts := \
- --build-arg USER=$(project) \
- --build-arg VERSION=$(version) \
- --build-arg WHEEL=$(docker_wheel) \
- --tag $(image_tag) \
- --progress plain
-
-proxy_build_opts := \
- --tag $(proxy_tag) \
- --progress plain
+build_opts := --build-arg USER=$(project) --build-arg VERSION=$(version) --build-arg WHEEL=$(docker_wheel) 
 
 docker_deps := $(wildcard docker/*) docker/VERSION docker/$(docker_wheel)
 proxy_deps := $(wildcard proxy/*) proxy/VERSION
@@ -43,30 +34,28 @@ docker/VERSION: VERSION
 proxy/VERSION: VERSION
 	cp $< $@
 
-### build image
-build: depends docker/.build proxy/.build
-
-docker/.build: $(docker_deps) 
+proxy/.build: $(proxy_deps)
+	docker compose --progress plain build $(cache_opts) $(build_opts) $(proxy_tag) 2>&1 | tee proxy_build.log
+	@grep -q ^ERROR proxy_build.log && exit 1 || true
+	docker tag $(registry)/$(proxy_tag):$(version) $(registry)/$(proxy_tag):latest
+	touch $@
+	
+docker/.build: $(docker_deps) proxy/.build 
 	cp docker-compose.yaml docker
-	docker build $(cache_opts) $(build_opts) docker 2>&1 | tee build.log
+	docker compose --progress plain build $(cache_opts) $(build_opts) $(image_tag) 2>&1 | tee build.log
 	@grep -q ^ERROR build.log && exit 1 || true
-	docker tag $(image) $(image_tag):$(version)
-	docker tag $(image) rstms/$(image_tag):$(version)
-	docker tag $(image) rstms/$(image_tag):latest
+	docker tag $(registry)/$(image_tag):$(version) $(registry)/$(image_tag):latest
 	touch $@
 
-proxy/.build: $(proxy_deps)
-	docker build $(cache_opts) $(proxy_build_opts) proxy 2>&1 | tee proxy_build.log
-	@grep -q ^ERROR proxy_build.log && exit 1 || true
-	docker tag $(proxy_image) $(proxy_tag):$(version)
-	docker tag $(proxy_image) rstms/$(proxy_tag):$(version)
-	docker tag $(proxy_image) rstms/$(proxy_tag):latest
-	
-proxy: proxy/.build
+build-proxy: proxy/.build
+
+### build image
+build: depends docker/.build
+
 
 ### rebuild image
 rebuild: clean depends 
-	$(MAKE) cache_opts="--no-cache build" build
+	$(MAKE) cache_opts="--no-cache" build
 
 ### docker-clean
 docker-clean:
@@ -80,14 +69,15 @@ tarball = $(image_tag)_$(version).tgz
 proxy_tarball = $(proxy_tag)_$(version).tgz
 
 ### upload image to netboot server
-upload:
+push: rebuild release
+	ssh $(netboot) sh -c 'rm -rf docker/images/*.tgz'
 	docker image save $(image_tag):$(version) -o $(tarball)
 	scp $(tarball) $(netboot):docker/images/$(tarball)
 	ssh $(netboot) chmod 0644 docker/images/$(tarball)
 	rm $(tarball)
 
 ### push image to docker registry
-push: rebuild release
+docker-push: rebuild release
 	docker tag $(image_tag):$(version) $(registry)/$(image_tag):$(version)
 	docker tag $(image_tag):$(version) $(registry)/$(image_tag):latest
 	docker push $(registry)/$(image_tag):$(version)
@@ -123,3 +113,8 @@ prune:
 
 scan:
 	docker run -v /var/run/docker.sock:/var/run/docker.sock -v $$HOME/Library/Caches:/root/.cache/ aquasec/trivy:0.57.0 image baikalctl:latest
+
+dockerclean:
+	docker ps -a | awk '/baikalctl/{print $$1}' | xargs -r -n 1 docker rm --force
+	docker images | awk '/baikalctl/{print $$3}' | xargs -r -n 1 docker rmi --force
+	docker system prune --force
