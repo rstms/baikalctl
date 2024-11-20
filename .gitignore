@@ -128,3 +128,5 @@ limbo
 certs
 *.pem
 *.key
+proxy/VERSION
+docker/docker-compose.yaml

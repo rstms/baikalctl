@@ -12,6 +12,9 @@ image_tag := $(project)
 image := $(image_tag):latest
 docker_wheel := $(notdir $(wheel))
 
+proxy_tag := $(project)_proxy
+proxy_image := $(proxy_tag):latest
+
 build_opts := \
  --build-arg USER=$(project) \
  --build-arg VERSION=$(version) \
@@ -19,9 +22,17 @@ build_opts := \
  --tag $(image_tag) \
  --progress plain
 
+proxy_build_opts := \
+ --tag $(proxy_tag) \
+ --progress plain
+
 docker_deps := $(wildcard docker/*) docker/VERSION docker/$(docker_wheel)
+proxy_deps := $(wildcard proxy/*) proxy/VERSION
 	
-cleanup_files := docker/.build docker/VERSION docker/*.whl
+cleanup_files := \
+ docker/.build docker/VERSION docker/*.whl docker/docker-compose.yaml \
+ proxy/.build proxy/VERSION \
+ $(wildcard *build.log)
 
 docker/$(docker_wheel): $(wheel)
 	cp $< $@
@@ -29,21 +40,33 @@ docker/$(docker_wheel): $(wheel)
 docker/VERSION: VERSION
 	cp $< $@
 
+proxy/VERSION: VERSION
+	cp $< $@
+
 ### build image
-build: depends docker/.build
+build: depends docker/.build proxy/.build
 
 docker/.build: $(docker_deps) 
 	cp docker-compose.yaml docker
-	docker build $(build_opts) docker 2>&1 | tee build.log
+	docker build $(cache_opts) $(build_opts) docker 2>&1 | tee build.log
 	@grep -q ^ERROR build.log && exit 1 || true
 	docker tag $(image) $(image_tag):$(version)
 	docker tag $(image) rstms/$(image_tag):$(version)
 	docker tag $(image) rstms/$(image_tag):latest
 	touch $@
 
+proxy/.build: $(proxy_deps)
+	docker build $(cache_opts) $(proxy_build_opts) proxy 2>&1 | tee proxy_build.log
+	@grep -q ^ERROR proxy_build.log && exit 1 || true
+	docker tag $(proxy_image) $(proxy_tag):$(version)
+	docker tag $(proxy_image) rstms/$(proxy_tag):$(version)
+	docker tag $(proxy_image) rstms/$(proxy_tag):latest
+	
+proxy: proxy/.build
+
 ### rebuild image
 rebuild: clean depends 
-	$(MAKE) build_opts="$(build_opts) --no-cache" build
+	$(MAKE) cache_opts="--no-cache build" build
 
 ### docker-clean
 docker-clean:
@@ -54,6 +77,7 @@ docker-sterile: docker-clean
 
 netboot = netboot.rstms.net
 tarball = $(image_tag)_$(version).tgz
+proxy_tarball = $(proxy_tag)_$(version).tgz
 
 ### upload image to netboot server
 upload:

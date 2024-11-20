@@ -1,8 +1,9 @@
 services:
   baikalctl:
     image: rstms/baikalctl:${BAIKALCTL_VERSION:-latest}
+    build:
+      context: docker
     restart: unless-stopped
-    #network_mode: host
     volumes:
       - ./certs:/home/baikalctl/certs
     environment:
@@ -26,26 +27,22 @@ services:
     hostname: baikalctl
 
   proxy:
-    image: nginx
+    image: rstms/baikalctl_proxy:${BAIKALCTL_VERSION:-latest}
     build:
       context: proxy
     restart: unless-stopped
     volumes:
       - type: bind
-        source: ./proxy/nginx.conf
-        target: /etc/nginx/nginx.conf
-        read_only: true
-      - type: bind
-        source: ./proxy/require_client_cert
-        target: /etc/nginx/require_client_cert
-        read_only: true
-      - type: bind
-        source: ./proxy/ssl
+        source: /etc/ssl
         target: /etc/nginx/ssl
         read_only: true
+      - type: bind
+        source: /var/www/acme
+        target: /var/www/acme
+        read_only: true
     ports:
-      - "4080:80"
-      - "4443:443"
+      - "80:80"
+      - "443:443"
 
 networks:
   baikalctl-network:
