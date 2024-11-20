@@ -28,6 +28,7 @@ class Client:
         self.verbose = False
         self.reset_time = None
         self.profile_dir = Profile.DEFAULT_DIR
+        self.client_kwargs = {}
 
     def startup(self, url, username, password, address, port, profile_dir, cert_file, key_file):
         logger.info("startup")
@@ -43,6 +44,7 @@ class Client:
         self.profile_dir = self.profile.dir
         self.cert_file = cert_file
         self.key_file = key_file
+        self.client_kwargs = {}
         if cert_file is not None:
             self.profile.AddCert(cert_file, key_file)
 
@@ -108,7 +110,7 @@ class Client:
     def list_users(self):
         logger.info("list_users")
         if self.client:
-            return self._parse_response(requests.get(f"{self.url}/users/"))
+            return self._parse_response(requests.get(f"{self.url}/users/", **self.client_kwargs))
         ret = self._login()
         if ret:
             return ret
@@ -159,7 +161,9 @@ class Client:
         if self.client:
             return self._parse_response(
                 requests.post(
-                    self.url + "/user/", data=dict(username=username, displayname=displayname, password=password)
+                    self.url + "/user/",
+                    data=dict(username=username, displayname=displayname, password=password),
+                    **self.client_kwargs,
                 )
             )
         self._login()
@@ -191,7 +195,7 @@ class Client:
     def delete_user(self, username):
         logger.info(f"delete_user {username}")
         if self.client:
-            return self._parse_response(requests.delete(f"{self.url}/user/{username}/"))
+            return self._parse_response(requests.delete(f"{self.url}/user/{username}/", **self.client_kwargs))
         i, table, col, err = self._find_user_column(username)
         if err:
             return err
@@ -206,7 +210,7 @@ class Client:
     def list_address_books(self, username):
         logger.info(f"list_address_books {username}")
         if self.client:
-            return self._parse_response(requests.get(f"{self.url}/addressbooks/{username}/"))
+            return self._parse_response(requests.get(f"{self.url}/addressbooks/{username}/", **self.client_kwargs))
         i, table, col, err = self._find_user_column(username)
         if err:
             return err
@@ -233,7 +237,9 @@ class Client:
         if self.client:
             return self._parse_response(
                 requests.post(
-                    self.url + "/addressbook/", data=dict(username=username, bookname=name, description=description)
+                    self.url + "/addressbook/",
+                    data=dict(username=username, bookname=name, description=description),
+                    **self.client_kwargs,
                 )
             )
         token = name + " " + description
@@ -255,7 +261,9 @@ class Client:
     def delete_address_book(self, username, name):
         logger.info(f"delete_address_book {username} {name}")
         if self.client:
-            return self._parse_response(requests.delete(f"{self.url}/addressbook/{username}/{name}/"))
+            return self._parse_response(
+                requests.delete(f"{self.url}/addressbook/{username}/{name}/", **self.client_kwargs)
+            )
         i, table, col, err = self._find_user_column(username)
         if err:
             return err
@@ -274,7 +282,7 @@ class Client:
     def reset(self):
         logger.info("reset")
         if self.client:
-            return self._parse_response(requests.post(f"{self.url}/reset/"))
+            return self._parse_response(requests.post(f"{self.url}/reset/", **self.client_kwargs))
         self.shutdown()
         self.startup(
             baikal.url,
@@ -293,7 +301,7 @@ class Client:
     def status(self):
         logger.info("status")
         if self.client:
-            return self._parse_response(requests.get(f"{self.url}/status/"))
+            return self._parse_response(requests.get(f"{self.url}/status/", **self.client_kwargs))
         return dict(
             name="baikalctl",
             version=__version__,

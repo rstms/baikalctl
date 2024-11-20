@@ -93,7 +93,7 @@ def cli(
         click.echo(__version__)
         sys.exit(0)
 
-    debug = ctx.obj['debug']
+    debug = ctx.obj["debug"]
 
     cfgdata = {}
     cfgfile = Path(config_file)
@@ -166,6 +166,8 @@ def cli(
     if api:
         baikal.url = api
         baikal.client = True
+        if cert:
+            baikal.client_kwargs["cert"] = (cert, key)
     else:
         if not password:
             raise RuntimeError("Missing config value: 'password'")
