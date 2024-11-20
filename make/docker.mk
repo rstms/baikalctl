@@ -77,7 +77,7 @@ push: release build
 	docker image save $(registry)/$(proxy_image) -o $(proxy_tarball)
 	ls -l
 	#scp *.tgz $(netboot):docker/images/
-	ssh $(netboot) 'echo $(version) >$(registry)/$(image_tag)_latest'
+	ssh $(netboot) 'echo $(version) >$(image_tag).latest'
 	ssh $(netboot) 'chmod 0644 ./docker/images/*.tgz'
 	ssh $(netboot) 'ls -al ./docker/images'
 	rm -f *.tgz
