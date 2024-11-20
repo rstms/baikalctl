@@ -1,0 +1,2 @@
+if ($ssl_client_verify = "NONE") { return 401; }
+if ($ssl_client_verify != "SUCCESS") { return 403; }

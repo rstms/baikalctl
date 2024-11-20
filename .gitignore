@@ -126,3 +126,5 @@ build.out
 build.err
 limbo
 certs
+*.pem
+*.key

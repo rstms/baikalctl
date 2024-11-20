@@ -16,7 +16,7 @@ serve() {
 	echo vncserver logging disabled
 	vncserver :1 >/dev/null 2>&1 &
     fi
-    baikalctl --address 127.0.0.1 server
+    baikalctl server
     pkill vncserver
 }
 

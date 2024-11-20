@@ -2,7 +2,7 @@ services:
   baikalctl:
     image: rstms/baikalctl:${BAIKALCTL_VERSION:-latest}
     restart: unless-stopped
-    network_mode: host
+    #network_mode: host
     volumes:
       - ./certs:/home/baikalctl/certs
     environment:
@@ -19,3 +19,35 @@ services:
       BAIKALCTL_PROFILE:
       BAIKALCTL_XVNC_VERBOSE:
       BAIKALCTL_PROFILE_CREATE_TIMEOUT:
+    expose:
+      - "8000"
+    depends_on:
+      - proxy
+    hostname: baikalctl
+
+  proxy:
+    image: nginx
+    build:
+      context: proxy
+    restart: unless-stopped
+    volumes:
+      - type: bind
+        source: ./proxy/nginx.conf
+        target: /etc/nginx/nginx.conf
+        read_only: true
+      - type: bind
+        source: ./proxy/require_client_cert
+        target: /etc/nginx/require_client_cert
+        read_only: true
+      - type: bind
+        source: ./proxy/ssl
+        target: /etc/nginx/ssl
+        read_only: true
+    ports:
+      - "4080:80"
+      - "4443:443"
+
+networks:
+  baikalctl-network:
+    driver: bridge
+
