@@ -5,7 +5,7 @@ services:
       context: docker
     restart: unless-stopped
     volumes:
-      - ./certs:/home/baikalctl/certs
+      - ${BAIKALCTL_CERTS_DIR:-/home/baikalctl/certs}:/home/baikalctl/certs
     environment:
       BAIKALCTL_USERNAME:
       BAIKALCTL_PASSWORD:
@@ -35,11 +35,11 @@ services:
       BAIKALCTL_FQDN:
     volumes:
       - type: bind
-        source: /etc/ssl/${BAIKALCTL_FQDN}.fullchain.pem
+        source: ${BAIKALCTL_CERTS_DIR:-/home/baikalctl/certs}/${BAIKALCTL_FQDN}.fullchain.pem
         target: /etc/ssl/${BAIKALCTL_FQDN}.fullchain.pem
         read_only: true
       - type: bind
-        source: /etc/ssl/private/${BAIKALCTL_FQDN}.key
+        source: ${BAIKALCTL_CERTS_DIR:-/home/baikalctl/certs}/${BAIKALCTL_FQDN}.key
         target: /etc/ssl/private/${BAIKALCTL_FQDN}.key
         read_only: true
       - type: bind

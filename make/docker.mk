@@ -90,14 +90,27 @@ docker-push: rebuild release
 
 docker_opts = 
 
+fqdn := $(shell hostname -f)
+
+certs/$(fqdn).key:
+	cd certs; openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+	    -keyout $(fqdn).key -out $(fqdn).fullchain.pem \
+	    -subj "/CN=$(fqdn)"
+
+certs/client.key:
+	cd certs; mkcert -d 1y client
+
+certs: certs/$(fqdn).key certs/client.key
+
+
 ### run docker image
-run:
+run: certs
 	docker compose $(docker_opts) up --force-recreate 
 
 ps:
 	docker compose ps 
 
-start:
+start: certs
 	docker compose $(docker_opts) up --force-recreate -d 
 
 stop:
