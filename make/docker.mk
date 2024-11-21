@@ -82,9 +82,11 @@ netboot-push: release build
 	rm -f *.tgz
 
 ### push image to docker registry
-docker-push: release build
+dockerhub-push: release build
 	docker push $(registry)/$(image_tag):$(version)
 	docker push $(registry)/$(image_tag):latest
+
+push: dockerhub-push
 
 docker_opts = 
 
