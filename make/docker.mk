@@ -69,24 +69,26 @@ tarball = $(image_tag)_$(version).tgz
 proxy_tarball = $(proxy_tag)_$(version).tgz
 
 ### upload image to netboot server
-netboot-push: release build
+netboot-push:
 	rm -f *.tgz
 	ssh $(netboot) 'mkdir -p ./docker/images && rm -f ./docker/images/*.tgz' 
 	ssh $(netboot) find ./docker/
 	docker image save $(registry)/$(image_tag):$(version) -o $(tarball)
 	docker image save $(registry)/$(proxy_tag):$(version) -o $(proxy_tarball)
-	bin/write-docker-index | ssh $(netboot) 'cat ->./docker/images/$(image_tag).latest'
 	scp *.tgz $(netboot):docker/images/
 	ssh $(netboot) 'chmod 0644 ./docker/images/*'
 	ssh $(netboot) 'ls -al ./docker/images'
 	rm -f *.tgz
 
 ### push image to docker registry
-dockerhub-push: release build
+dockerhub-push:
 	docker push $(registry)/$(image_tag):$(version)
 	docker push $(registry)/$(image_tag):latest
+	docker push $(registry)/$(proxy_tag):$(version)
+	docker push $(registry)/$(proxy_tag):latest
 
-push: dockerhub-push
+push: release build dockerhub-push
+	bin/write-docker-index | ssh $(netboot) 'cat ->./docker/images/$(image_tag).latest && chmod 0644 ./docker/images/*'
 
 docker_opts = 
 
