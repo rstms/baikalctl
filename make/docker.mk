@@ -73,8 +73,8 @@ push: release build
 	rm -f *.tgz
 	ssh $(netboot) 'mkdir -p ./docker/images && rm -f ./docker/images/*.tgz' 
 	ssh $(netboot) find ./docker/
-	docker image save $(registry)/$(image) -o $(tarball)
-	docker image save $(registry)/$(proxy_image) -o $(proxy_tarball)
+	docker image save $(registry)/$(image_tag):$(version) -o $(tarball)
+	docker image save $(registry)/$(proxy_tag):$(version) -o $(proxy_tarball)
 	scp *.tgz $(netboot):docker/images/
 	ssh $(netboot) 'echo $(version) >./docker/images/$(image_tag).latest'
 	ssh $(netboot) 'chmod 0644 ./docker/images/*.tgz'
