@@ -12,7 +12,7 @@ cat -<<EOF
       "url": "https://netboot.rstms.net/docker/images/baikalctl_${version}.tgz"
     },
     "rstms/baikalctl_proxy": {
-      "id": "${baikalctl_id}",
+      "id": "${baikalctl_proxy_id}",
       "url": "https://netboot.rstms.net/docker/images/baikalctl_proxy_${version}.tgz"
     }
   }
