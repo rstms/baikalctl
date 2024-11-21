@@ -69,7 +69,7 @@ tarball = $(image_tag)_$(version).tgz
 proxy_tarball = $(proxy_tag)_$(version).tgz
 
 ### upload image to netboot server
-push: release build
+netboot-push: release build
 	rm -f *.tgz
 	ssh $(netboot) 'mkdir -p ./docker/images && rm -f ./docker/images/*.tgz' 
 	ssh $(netboot) find ./docker/
@@ -82,9 +82,7 @@ push: release build
 	rm -f *.tgz
 
 ### push image to docker registry
-docker-push: rebuild release
-	docker tag $(image_tag):$(version) $(registry)/$(image_tag):$(version)
-	docker tag $(image_tag):$(version) $(registry)/$(image_tag):latest
+docker-push: release build
 	docker push $(registry)/$(image_tag):$(version)
 	docker push $(registry)/$(image_tag):latest
 
