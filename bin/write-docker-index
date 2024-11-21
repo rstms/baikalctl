@@ -1,0 +1,20 @@
+#!/bin/bash
+
+version=$(cat VERSION)
+baikalctl_id=$(docker images | awk "/rstms\\/baikalctl[\\t ]*${version}/{print \$3}")
+baikalctl_proxy_id=$(docker images | awk "/rstms\\/baikalctl_proxy[\\t ]*${version}/{print \$3}")
+cat -<<EOF
+{
+  "version": "$version",
+  "images": {
+    "rstms/baikalctl": {
+      "id": "${baikalctl_id}",
+      "url": "https://netboot.rstms.net/docker/images/baikalctl_${version}.tgz"
+    },
+    "rstms/baikalctl_proxy": {
+      "id": "${baikalctl_id}",
+      "url": "https://netboot.rstms.net/docker/images/baikalctl_proxy_${version}.tgz"
+    }
+  }
+}
+EOF
