@@ -25,6 +25,10 @@ http {
 
 	listen 80;
 
+	location / {
+	    return 444;
+	}
+
         location /.well-known/acme-challenge/ {
 	    root /var/www/acme;
 	    rewrite ^/.well-known/acme-challenge(/.*)$ $1 break;
@@ -47,7 +51,11 @@ http {
 
 	rewrite_log on;
 
-	location ~ /baikalctl(/.*)$ {
+	location / {
+	    return 444;
+	}
+
+	location ~ ^/baikalctl(/.*)$ {
 	    include /etc/nginx/require_client_cert; 
 	    proxy_set_header Host $host;
 	    proxy_set_header X-Real-IP $remote_addr;
