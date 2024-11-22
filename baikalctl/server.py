@@ -38,13 +38,18 @@ def post_reset():
     return baikal.reset()
 
 
+@app.post("/initialize/")
+def post_initialize():
+    return baikal.initialize()
+
+
 @app.get("/users/")
 def get_users():
     return baikal.list_users()
 
 
 @app.post("/user/")
-def post_user(user: Annotated[User, Form()]):
+def post_user(user: User):
     return baikal.add_user(user.username, user.displayname, user.password)
 
 
@@ -59,7 +64,7 @@ def get_addressbooks(username: str):
 
 
 @app.post("/addressbook/")
-def post_address_book(book: Annotated[AddressBook, Form()]):
+def post_address_book(book: AddressBook):
     return baikal.add_address_book(book.username, book.bookname, book.description)
 
 

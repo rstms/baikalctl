@@ -250,6 +250,13 @@ def reset(ctx):
 
 @cli.command
 @click.pass_obj
+def initialize(ctx):
+    """initialize freshly installed server"""
+    click.echo(json.dumps(ctx.initialize(), indent=2))
+
+
+@cli.command
+@click.pass_obj
 def version(ctx):
     """print version number"""
     click.echo(__version__)

@@ -9,6 +9,7 @@ from selenium import webdriver
 from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
+from selenium.webdriver.support.ui import Select
 
 from .firefox_profile import Profile
 from .version import __version__
@@ -64,15 +65,25 @@ class Client:
             self.driver.quit()
             self.driver = None
 
-    def _login(self):
+    def _login(self, initialize=False):
         if self.logged_in:
             return
+        logger.info("initialize" if initialize else "login")
         self._load_driver()
-        logger.info("login")
+        if initialize:
+            path = "/admin/install/"
+        else:
+            path = "/admin/"
         try:
-            self.driver.get(self.url + "/admin/")
+            self.driver.get(self.url + path)
         except WebDriverException as ex:
             return dict(error=ex.msg)
+
+        if initialize:
+            if self.driver.title != "Baïkal Maintainance":
+                return dict(error="failed to find initialize page")
+            return None
+
         username_text = self.driver.find_element(by=By.ID, value="login")
         password_text = self.driver.find_element(by=By.ID, value="password")
         authenticate_button = self.driver.find_element(by=By.TAG_NAME, value="button")
@@ -84,6 +95,46 @@ class Client:
         password_text.send_keys(self.password)
         authenticate_button.click()
         self.logged_in = True
+
+    def initialize(self):
+        ret = self._login(initialize=True)
+        if ret:
+            return ret
+        timezone = self.driver.find_element(by=By.ID, value="timezone")
+        invite_address = self.driver.find_element(by=By.ID, value="invite_from")
+        password = self.driver.find_element(by=By.ID, value="admin_passwordhash")
+        password_confirm = self.driver.find_element(by=By.ID, value="admin_passwordhash_confirm")
+        save_button = self.driver.find_element(by=By.TAG_NAME, value="button")
+        if save_button.text != "Save changes":
+            return dict(error="failed to find Save button")
+        select = Select(timezone)
+        select.select_by_visible_text("UTC")
+        invite_address.clear()
+        password.clear()
+        password.send_keys(self.password)
+        password_confirm.clear()
+        password_confirm.send_keys(self.password)
+        save_button.click()
+
+        overview = self.driver.find_element(by=By.ID, value="overview")
+        if overview.text != "Baïkal Database setup\nConfigure Baïkal Database.":
+            return dict(error="failed to locate database setup page")
+
+        save_button = self.driver.find_element(by=By.TAG_NAME, value="button")
+        save_button.click()
+
+        if "Baïkal is now installed, and its database properly configured" not in self.driver.page_source:
+            return dict(error="initialization failed")
+
+        start_button = self.driver.find_element(by=By.CLASS_NAME, value="btn-success")
+        if start_button.text != "Start using Baïkal":
+            return dict(error="failed to locate start button")
+
+        start_button.click()
+        if self.driver.current_url.endswith("/baikal/admin/"):
+            return dict(message="initialized")
+
+        return dict(error="initialization failed")
 
     def _logout(self):
         if self.logged_in:
@@ -162,7 +213,7 @@ class Client:
             return self._parse_response(
                 requests.post(
                     self.url + "/user/",
-                    data=dict(username=username, displayname=displayname, password=password),
+                    json=dict(username=username, displayname=displayname, password=password),
                     **self.client_kwargs,
                 )
             )
@@ -238,7 +289,7 @@ class Client:
             return self._parse_response(
                 requests.post(
                     self.url + "/addressbook/",
-                    data=dict(username=username, bookname=name, description=description),
+                    json=dict(username=username, bookname=name, description=description),
                     **self.client_kwargs,
                 )
             )
