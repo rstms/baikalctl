@@ -1,4 +1,4 @@
-FROM alpine:latest
+FROM alpine:3.21
 
 RUN apk upgrade --no-cache
 
@@ -9,7 +9,12 @@ RUN apk add --no-cache \
     py3-pip \
     nss-tools \
     openssl \
-    pipx && \
+    pipx \
+    ttf-dejavu \
+    ttf-droid \
+    ttf-liberation \
+    ttf-roboto \
+    fontconfig \
     doas && \
     apk cache clean && \
     rm -rf /var/cache/apk
