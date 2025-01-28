@@ -20,6 +20,8 @@ serve() {
     pkill vncserver
 }
 
+netstat -ant
+
 case $cmd in
     server) serve ;;
     docker-compose) cat docker-compose.yaml ;;
