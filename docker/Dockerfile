@@ -67,6 +67,9 @@ RUN pip cache purge && rm -rf /root/.cache/pipx
 # dev/test shell environment
 #RUN apk add doas man-pages mandoc mandoc-apropos docs && echo "permit keepenv nopass ${USER}" >>/etc/doas.conf
 
+RUN echo "0.0.0.0" > /home/${USER}/.vnc/config
+EXPOSE 5901
+
 USER ${USER}
 ENV DISPLAY=:1
 
@@ -74,9 +77,6 @@ ENV DISPLAY=:1
 RUN env BAIKALCTL_PASSWORD=. baikalctl --debug --verbose --log-level DEBUG status
 
 COPY --chmod=0644 docker-compose.yaml /home/${USER}/
-
-RUN echo "0.0.0.0" > /home/${USER}/.vnc/config
-EXPOSE 5901
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 CMD ["server"]
