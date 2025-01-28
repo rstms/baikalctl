@@ -10,6 +10,7 @@ RUN apk add --no-cache \
     nss-tools \
     openssl \
     pipx && \
+    doas && \
     apk cache clean && \
     rm -rf /var/cache/apk
 
@@ -67,7 +68,8 @@ RUN pip cache purge && rm -rf /root/.cache/pipx
 # dev/test shell environment
 #RUN apk add doas man-pages mandoc mandoc-apropos docs && echo "permit keepenv nopass ${USER}" >>/etc/doas.conf
 
-RUN echo "0.0.0.0" > /home/${USER}/.vnc/config
+RUN echo vnc | vncpasswd -f >/home/${USER}/.vnc/passwd
+RUN rm /home/${USER}/.vnc/config
 EXPOSE 5901
 
 USER ${USER}
