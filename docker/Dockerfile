@@ -75,6 +75,8 @@ RUN env BAIKALCTL_PASSWORD=. baikalctl --debug --verbose --log-level DEBUG statu
 
 COPY --chmod=0644 docker-compose.yaml /home/${USER}/
 
+RUN rm /home/${USER}/.vnc/config
+EXPOSE 5901
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 CMD ["server"]

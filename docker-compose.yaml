@@ -22,6 +22,9 @@ services:
       BAIKALCTL_PROFILE_CREATE_TIMEOUT:
     expose:
       - "8000"
+    ports:
+      - "5999:5901"
+
     depends_on:
       - baikalctl_proxy
     hostname: baikalctl
