@@ -131,4 +131,5 @@ certs
 *.key
 proxy/VERSION
 docker/docker-compose.yaml
-*.tgz
+docker/build_time
+

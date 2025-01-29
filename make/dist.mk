@@ -1,6 +1,7 @@
 # python dist makefile
 
 wheel := dist/$(module)-$(version)-py2.py3-none-any.whl
+tarball := dist/$(module)-$(version).tar.gz
 dependency_wheels := $(filter-out $(wildcard dist/*.whl),$(wheel))
 
 $(wheel): $(src) pyproject.toml

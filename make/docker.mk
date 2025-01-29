@@ -15,14 +15,24 @@ docker_wheel := $(notdir $(wheel))
 proxy_tag := $(project)_proxy
 proxy_image := $(proxy_tag):latest
 
-build_opts := --build-arg USER=$(project) --build-arg VERSION=$(version) --build-arg WHEEL=$(docker_wheel) 
+build_opts := \
+    --build-arg USER=$(project) \
+    --build-arg VERSION=$(version) \
+    --build-arg WHEEL=$(docker_wheel)  \
+    --build-arg TZ=$(shell cat /etc/timezone) \
 
 docker_deps := $(wildcard docker/*) docker/VERSION docker/$(docker_wheel)
 proxy_deps := $(wildcard proxy/*) proxy/VERSION
 	
 cleanup_files := \
- docker/.build docker/VERSION docker/*.whl docker/docker-compose.yaml \
- proxy/.build proxy/VERSION \
+ docker/.build \
+ docker/VERSION \
+ docker/*.whl \
+ docker/*.tar.gz \
+ docker/docker-compose.yaml \
+ proxy/.build \
+ proxy/VERSION \
+ docker/build_time \
  $(wildcard *build.log)
 
 docker/$(docker_wheel): $(wheel)
@@ -41,6 +51,7 @@ proxy/.build: $(proxy_deps)
 	touch $@
 	
 docker/.build: $(docker_deps) proxy/.build 
+	date > docker/build_time
 	cp docker-compose.yaml docker
 	docker compose --progress plain build $(cache_opts) $(build_opts) $(image_tag) 2>&1 | tee build.log
 	@grep -q ^ERROR build.log && exit 1 || true
@@ -54,8 +65,13 @@ build: depends docker/.build
 
 
 ### rebuild image
-rebuild: clean depends 
+full-rebuild: clean depends 
 	$(MAKE) cache_opts="--no-cache" build
+
+rebuild: 
+	rm docker/.build
+	$(MAKE) build
+
 
 ### docker-clean
 docker-clean:
@@ -107,7 +123,7 @@ certs: certs/$(fqdn).key certs/client.key
 
 ### run docker image
 run: certs
-	docker compose $(docker_opts) up --force-recreate 
+	env BAIKALCTL_VERSION=latest docker compose $(docker_opts) up --force-recreate 
 
 ps:
 	docker compose ps 

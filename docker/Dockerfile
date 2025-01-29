@@ -13,9 +13,7 @@ RUN apk add --no-cache \
     ttf-dejavu \
     ttf-droid \
     ttf-liberation \
-    ttf-roboto \
-    fontconfig \
-    doas && \
+    fontconfig && \
     apk cache clean && \
     rm -rf /var/cache/apk
 
@@ -51,12 +49,16 @@ ENV WHEEL=$WHEEL
 COPY --chmod=0644 ${WHEEL} .
 RUN mkdir -p .cache/baikalctl/profile
 
-RUN \
-    pipx install ${WHEEL} && \
-    baikalctl --version && \
-    rm ${WHEEL} && \
-    pip cache purge && \
-    rm -rf /home/${USER}/.cache/pipx
+# dev/test: install wheel and dependencies into local python environment
+RUN pip install --break-system-packages $WHEEL
+
+# prod: install wheel with pipx
+#RUN \
+#    pipx install ${WHEEL} && \
+#    baikalctl --version && \
+#    rm ${WHEEL} && \
+#    pip cache purge && \
+#    rm -rf /home/${USER}/.cache/pipx
 
 # ensure VERSION file matches installed app version
 RUN [ $(head -1 VERSION) = $(baikalctl version) ]
@@ -70,8 +72,11 @@ USER root
 COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
 RUN pip cache purge && rm -rf /root/.cache/pipx
 
-# dev/test shell environment
-#RUN apk add doas man-pages mandoc mandoc-apropos docs && echo "permit keepenv nopass ${USER}" >>/etc/doas.conf
+# dev/test environment
+RUN \
+    apk add doas make jq git man-pages mandoc mandoc-apropos docs && \
+    echo "permit keepenv nopass ${USER}" >>/etc/doas.conf && \
+    pipx install rstms-tq 
 
 RUN echo vnc | vncpasswd -f >/home/${USER}/.vnc/passwd
 RUN rm /home/${USER}/.vnc/config
@@ -85,5 +90,8 @@ RUN env BAIKALCTL_PASSWORD=. baikalctl --debug --verbose --log-level DEBUG statu
 
 COPY --chmod=0644 docker-compose.yaml /home/${USER}/
 
+COPY --chmod=0644  build_time /etc/build_time
+
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
-CMD ["server"]
+#CMD ["server"]
+CMD ["sleep", "inf"]

@@ -20,7 +20,8 @@ serve() {
     pkill vncserver
 }
 
-netstat -ant
+echo "Version $(cat VERSION)"
+echo "Built $(cat /etc/build_time)"
 
 case $cmd in
     server) serve ;;
