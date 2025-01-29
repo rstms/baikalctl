@@ -74,9 +74,8 @@ RUN pip cache purge && rm -rf /root/.cache/pipx
 
 # dev/test environment
 RUN \
-    apk add doas make jq git man-pages mandoc mandoc-apropos docs && \
-    echo "permit keepenv nopass ${USER}" >>/etc/doas.conf && \
-    pipx install rstms-tq 
+    apk add doas bash less vim coreutils make jq git man-pages mandoc mandoc-apropos docs && \
+    echo "permit keepenv nopass ${USER}" >>/etc/doas.conf 
 
 RUN echo vnc | vncpasswd -f >/home/${USER}/.vnc/passwd
 RUN rm /home/${USER}/.vnc/config
@@ -92,6 +91,9 @@ COPY --chmod=0644 docker-compose.yaml /home/${USER}/
 
 COPY --chmod=0644  build_time /etc/build_time
 
+# dev/test command
+RUN pipx install rstms-tq
+
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 #CMD ["server"]
-CMD ["sleep", "inf"]
+CMD ["dev"]

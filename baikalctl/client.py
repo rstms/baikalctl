@@ -65,6 +65,12 @@ class Client:
             self.driver.quit()
             self.driver = None
 
+    def _messages(self):
+        html = self.driver.find_element(By.TAG_NAME, "html")
+        body = html.find_element(By.TAG_NAME, "body")
+        messages = body.find_elements(By.ID, "message")
+        return [message.text for message in messages]
+
     def _login(self, initialize=False):
         if self.logged_in:
             return
@@ -94,6 +100,9 @@ class Client:
         password_text.clear()
         password_text.send_keys(self.password)
         authenticate_button.click()
+        messages = self._messages()
+        if messages:
+            return dict(error='\n'.join(messages))
         self.logged_in = True
 
     def initialize(self):

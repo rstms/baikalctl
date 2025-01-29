@@ -1,7 +1,6 @@
 import logging
-from typing import Annotated
 
-from fastapi import FastAPI, Form
+from fastapi import FastAPI
 from pydantic import BaseModel
 
 from .client import baikal

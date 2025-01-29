@@ -135,7 +135,7 @@ stop:
 	docker compose $(docker_opts) down --timeout 3
 
 shell:
-	docker compose exec baikalctl /bin/sh
+	docker compose exec baikalctl /bin/bash
 
 tail:
 	while true; do { docker compose logs --follow; sleep 3; }; done

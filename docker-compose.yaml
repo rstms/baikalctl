@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - ${BAIKALCTL_CERTS_DIR:-/home/baikalctl/certs}:/home/baikalctl/certs
-      - .:/home/baikalctl/src
+      - .:/home/baikalctl/src/baikalctl
     environment:
       BAIKALCTL_USERNAME:
       BAIKALCTL_PASSWORD:

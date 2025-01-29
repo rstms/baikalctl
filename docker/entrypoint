@@ -16,7 +16,7 @@ serve() {
 	echo vncserver logging disabled
 	vncserver :1 >/dev/null 2>&1 &
     fi
-    baikalctl server
+    "$@"
     pkill vncserver
 }
 
@@ -24,9 +24,10 @@ echo "Version $(cat VERSION)"
 echo "Built $(cat /etc/build_time)"
 
 case $cmd in
-    server) serve ;;
+    server) serve baikalctl server;;
     docker-compose) cat docker-compose.yaml ;;
     show-config) baikalctl --show-config ;;
     client) shift; baikalctl --api http://127.0.0.1:${BAIKALCTL_PORT:-8000} "$@" ;;
+    dev) serve sleep inf;;
     *) "$@" ;;
 esac
