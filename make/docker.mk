@@ -36,6 +36,7 @@ cleanup_files := \
  $(wildcard *build.log)
 
 docker/$(docker_wheel): $(wheel)
+	rm -f docker/*.whl
 	cp $< $@
 
 docker/VERSION: VERSION

@@ -8,6 +8,8 @@ if [ $# -gt 0 ]; then
 fi
 
 serve() {
+    echo "Version $(cat VERSION)"
+    echo "Built $(cat /etc/build_time)"
     export DISPLAY=:1
     if [ -n "${BAIKALCTL_XVNC_VERBOSE:-}" ]; then
 	echo vncserver logging enabled
@@ -20,8 +22,6 @@ serve() {
     pkill vncserver
 }
 
-echo "Version $(cat VERSION)"
-echo "Built $(cat /etc/build_time)"
 
 case $cmd in
     server) serve baikalctl;;
