@@ -23,6 +23,7 @@ dynamic = ["description"]
 
 dependencies = [
   "arrow",
+  "beautifulsoup4",
   "click",
   "selenium",
   "pyyaml",
