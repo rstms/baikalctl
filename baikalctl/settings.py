@@ -15,7 +15,7 @@ URL = config(
 )
 CERT = config("BAIKALCTL_CERT", cast=str, default=str(Path.home() / "certs" / "client.pem"))
 KEY = config("BAIKALCTL_KEY", cast=str, default=str(Path.home() / "certs" / "client.key"))
-API_KEY = config("BAIKALCTL_API_KEY", cast=str)
+API_KEY = config("BAIKALCTL_API_KEY", cast=str, default='SET_API_KEY')
 
 PROFILE_NAME = config("BAIKALCTL_PROFILE_NAME", cast=str, default="default")
 PROFILE_DIR = config("BAIKALCTL_PROFILE_DIR", cast=str, default=str(Path.home() / ".cache" / "baikalctl" / "profile"))
