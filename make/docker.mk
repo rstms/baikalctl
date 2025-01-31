@@ -69,7 +69,7 @@ full-rebuild: clean depends
 	$(MAKE) cache_opts="--no-cache" build
 
 rebuild: 
-	rm docker/.build
+	rm -f docker/.build
 	$(MAKE) build
 
 
