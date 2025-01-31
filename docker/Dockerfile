@@ -87,7 +87,7 @@ USER ${USER}
 ENV DISPLAY=:1
 
 # first run creates firefox profile
-RUN env BAIKALCTL_PASSWORD=. baikalctl --debug --log-level DEBUG status
+RUN env BAIKALCTL_PASSWORD=. baikalctl --debug --log-level DEBUG --create-profile
 
 COPY --chmod=0644 docker-compose.yaml /home/${USER}/
 

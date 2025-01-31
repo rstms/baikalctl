@@ -56,6 +56,7 @@ class SessionConfig:
     debug = False
     log_level = "WARNING"
     logger = __name__
+    create_profile = False
 
     @validate_call
     def __init__(

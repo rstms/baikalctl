@@ -7,7 +7,7 @@ import click.core
 import uvicorn
 
 from . import settings
-from .browser import SessionConfig
+from .browser import Session, SessionConfig
 from .exception_handler import ExceptionHandler
 from .shell import _shell_completion
 from .version import __timestamp__, __version__
@@ -36,6 +36,7 @@ def _ehandler(ctx, option, debug):
 @click.option("--cert", default=settings.CERT, help="cient certificate file")
 @click.option("--key", default=settings.KEY, help="client certificate key file")
 @click.option("--show-config", is_flag=True)
+@click.option("--create-profile", is_flag=True)
 @click.option(
     "--shell-completion",
     is_flag=False,
@@ -58,6 +59,7 @@ def baikalctl(
     profile_dir,
     profile_name,
     show_config,
+    create_profile,
     shell_completion,
 ):
     """baikalctl - admin CLI for baikal webdav/webcal server"""
@@ -99,6 +101,12 @@ def baikalctl(
         logger="uvicorn",
         log_level=log_level,
     )
+
+    if create_profile:
+        session = Session()
+        session._load_driver()
+        session.shutdown()
+        sys.exit(0)
 
     uvicorn.run(
         "baikalctl:app",
