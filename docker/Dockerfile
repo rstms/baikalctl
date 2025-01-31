@@ -65,7 +65,7 @@ RUN [ $(head -1 VERSION) = $(baikalctl --version | awk '{print $2}' | tr -d v) ]
 
 # ensure VERSION arg match
 ARG VERSION
-RUN [ ${VERSION} = $(baikalctl version) ]
+RUN [ ${VERSION} = $(baikalctl --version | awk '{print $2}' | tr -d v) ]
 
 USER root
 
