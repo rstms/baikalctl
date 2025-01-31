@@ -21,7 +21,7 @@ services:
       BAIKALCTL_PROFILE:
       BAIKALCTL_XVNC_VERBOSE:
       BAIKALCTL_PROFILE_CREATE_TIMEOUT:
-      BAIKALCTL_DEV:
+      BAIKALCTL_API_KEY:
     expose:
       - "8000"
     ports:

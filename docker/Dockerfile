@@ -77,9 +77,11 @@ RUN pip cache purge && rm -rf /root/.cache/pipx
 #    apk add doas bash less vim coreutils make jq git man-pages mandoc mandoc-apropos docs && \
 #    echo "permit keepenv nopass ${USER}" >>/etc/doas.conf 
 
-RUN echo vnc | vncpasswd -f >/home/${USER}/.vnc/passwd
-RUN rm /home/${USER}/.vnc/config
-EXPOSE 5901
+RUN \
+    echo vnc | vncpasswd -f >/home/${USER}/.vnc/passwd \
+    echo "localhost" >/home/${USER}/.vnc/config
+    
+#EXPOSE 5901
 
 USER ${USER}
 ENV DISPLAY=:1
