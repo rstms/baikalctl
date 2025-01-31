@@ -61,7 +61,7 @@ RUN \
     rm -rf /home/${USER}/.cache/pipx
 
 # ensure VERSION file matches installed app version
-RUN [ $(head -1 VERSION) = $(baikalctl version) ]
+RUN [ $(head -1 VERSION) = $(baikalctl --version | awk '{print $2}') ]
 
 # ensure VERSION arg match
 ARG VERSION
