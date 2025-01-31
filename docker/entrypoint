@@ -24,10 +24,9 @@ echo "Version $(cat VERSION)"
 echo "Built $(cat /etc/build_time)"
 
 case $cmd in
-    server) serve baikalctl server;;
+    server) serve baikalctl;;
     docker-compose) cat docker-compose.yaml ;;
     show-config) baikalctl --show-config ;;
-    client) shift; baikalctl --api http://127.0.0.1:${BAIKALCTL_PORT:-8000} "$@" ;;
     dev) serve sleep inf;;
     *) "$@" ;;
 esac
