@@ -50,15 +50,15 @@ COPY --chmod=0644 ${WHEEL} .
 RUN mkdir -p .cache/baikalctl/profile
 
 # dev/test: install wheel and dependencies into local python environment
-RUN pip install --break-system-packages $WHEEL
+#RUN pip install --break-system-packages $WHEEL
 
 # prod: install wheel with pipx
-#RUN \
-#    pipx install ${WHEEL} && \
-#    baikalctl --version && \
-#    rm ${WHEEL} && \
-#    pip cache purge && \
-#    rm -rf /home/${USER}/.cache/pipx
+RUN \
+    pipx install ${WHEEL} && \
+    baikalctl --version && \
+    rm ${WHEEL} && \
+    pip cache purge && \
+    rm -rf /home/${USER}/.cache/pipx
 
 # ensure VERSION file matches installed app version
 RUN [ $(head -1 VERSION) = $(baikalctl version) ]
@@ -73,9 +73,9 @@ COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
 RUN pip cache purge && rm -rf /root/.cache/pipx
 
 # dev/test environment
-RUN \
-    apk add doas bash less vim coreutils make jq git man-pages mandoc mandoc-apropos docs && \
-    echo "permit keepenv nopass ${USER}" >>/etc/doas.conf 
+#RUN \
+#    apk add doas bash less vim coreutils make jq git man-pages mandoc mandoc-apropos docs && \
+#    echo "permit keepenv nopass ${USER}" >>/etc/doas.conf 
 
 RUN echo vnc | vncpasswd -f >/home/${USER}/.vnc/passwd
 RUN rm /home/${USER}/.vnc/config
@@ -92,8 +92,8 @@ COPY --chmod=0644 docker-compose.yaml /home/${USER}/
 COPY --chmod=0644  build_time /etc/build_time
 
 # dev/test command
-RUN pipx install rstms-tq
+#RUN pipx install rstms-tq
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
-#CMD ["server"]
-CMD ["dev"]
+CMD ["server"]
+#CMD ["dev"]

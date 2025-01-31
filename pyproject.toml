@@ -45,6 +45,7 @@ dev = [
   "flake8-length",
   "pdbpp",
   "pytest",
+  "pytest-asyncio",
   "pytest-datadir",
   "python-box",
   "toml"
@@ -68,4 +69,5 @@ collect_ignore = ['setup.py']
 
 
 [project.scripts]
-baikalctl = "baikalctl:cli"
+baikalctl = "baikalctl:baikalctl"
+bcc = "baikalctl:bcc"

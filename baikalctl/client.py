@@ -1,383 +1,124 @@
-# baikalctl client
+# baikalctl API client
 
-import logging
 import re
+from pathlib import Path
+from typing import Dict, List
 
-import arrow
 import requests
-from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
-from selenium.webdriver.support.ui import Select
+from pydantic import validate_call
+from requests.exceptions import JSONDecodeError
 
-from .firefox_profile import Profile
-from .version import __version__
+from .models import (
+    Account,
+    AddBookRequest,
+    AddUserRequest,
+    Book,
+    DeleteBookRequest,
+    DeleteUserRequest,
+    User,
+)
 
-MIN_PASSWD_LEN = 8
 
-logger = logging.getLogger(__name__)
+def validate_pem_file(filename: str, pem_type: str):
+    with Path(filename).open("r") as ifp:
+        content = ifp.read()
+        if "-----BEGIN" not in content or "-----END" not in content:
+            raise ValueError(f"{filename} is not PEM format")
+        if "cert" in pem_type:
+            if not re.match(".*-----BEGIN CERTIFICATE-----.*", content, re.MULTILINE):
+                raise ValueError(f"{filename} is not a certificate")
+        elif "key" in pem_type:
+            if "pub" in pem_type:
+                if not re.match(".*-----BEGIN .*PUBLIC KEY-----.*", content, re.MULTILINE):
+                    raise ValueError(f"{filename} is not a public key")
+            elif "priv" in pem_type:
+                if not re.match(".*-----BEGIN .*PRIVATE KEY-----.*", content, re.MULTILINE):
+                    raise ValueError(f"{filename} is not a private key")
+            else:
+                if not re.match(".*-----BEGIN .* KEY-----.*", content, re.MULTILINE):
+                    raise ValueError(f"{filename} is not a key")
 
 
-class Client:
-    def __init__(self):
-        self.driver = None
-        self.logged_in = False
-        self.startup_time = arrow.now()
-        self.header = "baikalctl v" + __version__
-        self.log_level = "WARNING"
-        self.verbose = False
-        self.reset_time = None
-        self.profile_dir = Profile.DEFAULT_DIR
-        self.client_kwargs = {}
-
-    def startup(self, url, username, password, address, port, profile_dir, cert_file, key_file):
-        logger.info("startup")
-        self.client = False
-        self.url = url
-        self.username = username
-        self.password = password
-        self.address = address
-        self.port = port
-        self.logged_in = False
-        self.profile = None
-        self.profile = Profile(self.profile_dir)
-        self.profile_dir = self.profile.dir
-        self.cert_file = cert_file
-        self.key_file = key_file
-        self.client_kwargs = {}
-        if cert_file is not None:
-            self.profile.AddCert(cert_file, key_file)
-
-    def _load_driver(self):
-        if not self.driver:
-            logger.info("load_driver")
-            self.firefox_options = webdriver.FirefoxOptions()
-            self.firefox_options.profile = FirefoxProfile(self.profile.dir)
-            self.firefox_options.profile.set_preference("security.default_personal_cert", "Select Automatically")
-            self.driver = webdriver.Firefox(options=self.firefox_options)
-
-    def shutdown(self):
-        logger.info("shutdown")
-        if self.logged_in:
-            self._logout()
-        if self.driver:
-            self.driver.quit()
-            self.driver = None
-
-    def _messages(self):
-        html = self.driver.find_element(By.TAG_NAME, "html")
-        body = html.find_element(By.TAG_NAME, "body")
-        messages = body.find_elements(By.ID, "message")
-        return [message.text for message in messages]
-
-    def _login(self, initialize=False):
-        if self.logged_in:
-            return
-        logger.info("initialize" if initialize else "login")
-        self._load_driver()
-        if initialize:
-            path = "/admin/install/"
-        else:
-            path = "/admin/"
-        try:
-            self.driver.get(self.url + path)
-        except WebDriverException as ex:
-            return dict(error=ex.msg)
-
-        if initialize:
-            if self.driver.title != "Baïkal Maintainance":
-                return dict(error="failed to find initialize page")
-            return None
-
-        username_text = self.driver.find_element(by=By.ID, value="login")
-        password_text = self.driver.find_element(by=By.ID, value="password")
-        authenticate_button = self.driver.find_element(by=By.TAG_NAME, value="button")
-        if authenticate_button.text != "Authenticate":
-            return dict(error="failed to find Authenticate button")
-        username_text.clear()
-        username_text.send_keys(self.username)
-        password_text.clear()
-        password_text.send_keys(self.password)
-        authenticate_button.click()
-        messages = self._messages()
-        if messages:
-            return dict(error='\n'.join(messages))
-        self.logged_in = True
-
-    def initialize(self):
-        ret = self._login(initialize=True)
-        if ret:
-            return ret
-        timezone = self.driver.find_element(by=By.ID, value="timezone")
-        invite_address = self.driver.find_element(by=By.ID, value="invite_from")
-        password = self.driver.find_element(by=By.ID, value="admin_passwordhash")
-        password_confirm = self.driver.find_element(by=By.ID, value="admin_passwordhash_confirm")
-        save_button = self.driver.find_element(by=By.TAG_NAME, value="button")
-        if save_button.text != "Save changes":
-            return dict(error="failed to find Save button")
-        select = Select(timezone)
-        select.select_by_visible_text("UTC")
-        invite_address.clear()
-        password.clear()
-        password.send_keys(self.password)
-        password_confirm.clear()
-        password_confirm.send_keys(self.password)
-        save_button.click()
-
-        overview = self.driver.find_element(by=By.ID, value="overview")
-        if overview.text != "Baïkal Database setup\nConfigure Baïkal Database.":
-            return dict(error="failed to locate database setup page")
-
-        save_button = self.driver.find_element(by=By.TAG_NAME, value="button")
-        save_button.click()
-
-        if "Baïkal is now installed, and its database properly configured" not in self.driver.page_source:
-            return dict(error="initialization failed")
-
-        start_button = self.driver.find_element(by=By.CLASS_NAME, value="btn-success")
-        if start_button.text != "Start using Baïkal":
-            return dict(error="failed to locate start button")
-
-        start_button.click()
-        if self.driver.current_url.endswith("/baikal/admin/"):
-            return dict(message="initialized")
-
-        return dict(error="initialization failed")
-
-    def _logout(self):
-        if self.logged_in:
-            logger.info("logout")
-            self.driver.get(self.url + "/admin/")
-            self.driver.find_element(by=By.LINK_TEXT, value="Logout").click()
-            self.logged_in = False
-
-    def _select_user_page(self):
-        self.driver.get(self.url + "/admin/")
-        users_menu = self.driver.find_element(by=By.LINK_TEXT, value="Users and resources")
-        users_menu.click()
-
-    def _parse_user_col(self, element):
-        name, _, tail = element.text.partition("\n")
-        display, _, email = tail.partition(" <")
-        email = email.strip(">")
-        return name, display, email
+class API:
+    @validate_call
+    def __init__(
+        self, url: str, admin_username: str, admin_password: str, client_cert: str, client_key: str, api_key: str
+    ):
+        self.url = url.strip("/")
+        self.session = requests.Session()
+        validate_pem_file(client_cert, "certificate")
+        validate_pem_file(client_key, "private key")
+        self.session.cert = (client_cert, client_key)
+        account = Account(username=admin_username, password=admin_password)
+        self.session.headers["X-Admin-Username"] = account.username
+        self.session.headers["X-Admin-Password"] = account.password
+        self.session.headers["X-Api-Key"] = api_key
 
     def _parse_response(self, response):
-        response.raise_for_status()
-        return response.json()
+        if response.ok:
+            return response.json()
+        try:
+            message = response.json()
+        except JSONDecodeError:
+            message = f"{str(response)} {response.reason}"
+        raise RuntimeError(message)
 
-    def list_users(self):
-        logger.info("list_users")
-        if self.client:
-            return self._parse_response(requests.get(f"{self.url}/users/", **self.client_kwargs))
-        ret = self._login()
-        if ret:
-            return ret
-        self._select_user_page()
-        users_cols = self.driver.find_elements(by=By.CLASS_NAME, value="col-username")
-        ret = {}
-        for col in users_cols:
-            username, displayname, email = self._parse_user_col(col)
-            ret[username] = dict(display_name=displayname, email=email)
-        return ret
+    def _request(self, func, path, **kwargs):
+        return self._parse_response(func(f"{self.url}/{path.strip('/')}/", **kwargs))
 
-    def _set_text(self, by, value, text):
-        element = self.driver.find_element(by=by, value=value)
-        element.clear()
-        element.send_keys(text)
+    def _get(self, path, **kwargs):
+        return self._request(self.session.get, path, **kwargs)
 
-    def _validate_name(self, text):
-        if not re.match("^[a-zA-Z][a-zA-Z0-9@_-]*$", text):
-            return dict(error=f"illegal characters in: '{text}'")
-        return None
+    def _post(self, path, **kwargs):
+        return self._request(self.session.post, path, **kwargs)
 
-    def _validate_description(self, text):
-        if not re.match("^[a-zA-Z][a-zA-Z0-9@_ -]*$", text):
-            return dict(error=f"illegal characters in: '{text}'")
-        return None
+    def _delete(self, path, **kwargs):
+        return self._request(self.session.delete, path, **kwargs)
 
-    def _validate_email(self, text):
-        if not re.match("^[a-z][a-z0-9-]*@[a-z][a-z0-9\\.]*\\.[a-z][a-z]*$", text):
-            return dict(error=f"illegal characters in: '{text}'")
-        return None
+    @validate_call
+    def status(self) -> Dict[str, str]:
+        return self._get("status")
 
-    def _validate_password(self, text):
-        if len(text) < MIN_PASSWD_LEN:
-            return dict(error=f"password too short; minimum={MIN_PASSWD_LEN}")
-        return None
+    @validate_call
+    def initialize(self) -> Dict[str, str]:
+        return self._post("initialize")
 
-    def add_user(self, username, displayname, password):
-        logger.info(f"add_user {username} {displayname} ************")
-        err = self._validate_email(username)
-        if err:
-            return err
-        err = self._validate_description(displayname)
-        if err:
-            return err
-        err = self._validate_password(password)
-        if err:
-            return err
-        if self.client:
-            return self._parse_response(
-                requests.post(
-                    self.url + "/user/",
-                    json=dict(username=username, displayname=displayname, password=password),
-                    **self.client_kwargs,
-                )
-            )
-        self._login()
-        self._select_user_page()
-        add_user_button = self.driver.find_element(by=By.LINK_TEXT, value="+ Add user")
-        add_user_button.click()
-        self._set_text(By.NAME, "data[username]", username)
-        self._set_text(By.NAME, "data[displayname]", displayname)
-        self._set_text(By.NAME, "data[email]", username)
-        self._set_text(By.NAME, "data[password]", password)
-        self._set_text(By.NAME, "data[passwordconfirm]", password)
-        save_changes_button = [
-            b for b in self.driver.find_elements(By.CLASS_NAME, "btn-primary") if b.text == "Save changes"
-        ][0]
-        save_changes_button.click()
-        return dict(added_user=username)
+    @validate_call
+    def reset(self) -> Dict[str, str]:
+        return self._post("reset")
 
-    def _find_user_column(self, username):
-        self._login()
-        self._select_user_page()
-        table = self.driver.find_element(By.CLASS_NAME, "users")
-        users_cols = table.find_elements(by=By.CLASS_NAME, value="col-username")
-        for i, col in enumerate(users_cols):
-            name, display, email = self._parse_user_col(col)
-            if name == username:
-                return i, table, col, None
-        return -1, None, None, dict(error=f"not found: '{username}'")
+    @validate_call
+    def users(self) -> List[User]:
+        users = self._get("users")
+        return [User(**user) for user in users]
 
-    def delete_user(self, username):
-        logger.info(f"delete_user {username}")
-        if self.client:
-            return self._parse_response(requests.delete(f"{self.url}/user/{username}/", **self.client_kwargs))
-        i, table, col, err = self._find_user_column(username)
-        if err:
-            return err
-        table.find_elements(By.CLASS_NAME, "col-actions")[i].find_element(By.LINK_TEXT, "Delete").click()
-        buttons = self.driver.find_elements(By.CLASS_NAME, "btn-danger")
-        for button in buttons:
-            if button.text == "Delete " + username:
-                button.click()
-                return dict(deleted_user=username)
-        return dict(error="not found: '{username}'")
+    @validate_call
+    def add_user(self, username: str, displayname: str, password: str) -> User:
+        request = AddUserRequest(username=username, displayname=displayname, password=password)
+        result = self._post("user", data=request.model_dump_json())
+        return User(**result)
 
-    def list_address_books(self, username):
-        logger.info(f"list_address_books {username}")
-        if self.client:
-            return self._parse_response(requests.get(f"{self.url}/addressbooks/{username}/", **self.client_kwargs))
-        i, table, col, err = self._find_user_column(username)
-        if err:
-            return err
-        table.find_elements(By.CLASS_NAME, "col-actions")[i].find_element(By.LINK_TEXT, "Address Books").click()
-        names = self.driver.find_elements(By.CLASS_NAME, "col-displayname")
-        contacts = self.driver.find_elements(By.CLASS_NAME, "col-contacts")
-        descriptions = self.driver.find_elements(By.CLASS_NAME, "col-description")
-        books = {}
-        for i, name in enumerate(names):
-            books[name.text] = dict(contacts=int(contacts[i].text), description=descriptions[i].text)
-        return books
+    @validate_call
+    def delete_user(self, username: str) -> Dict[str, str]:
+        request = DeleteUserRequest(username=username)
+        return self._delete("user", data=request.model_dump_json())
 
-    def add_address_book(self, username, name, description):
-        logger.info(f"add_address_book {username} {name} {description}")
-        err = self._validate_email(username)
-        if err:
-            return err
-        err = self._validate_description(name)
-        if err:
-            return err
-        err = self._validate_description(description)
-        if err:
-            return err
-        if self.client:
-            return self._parse_response(
-                requests.post(
-                    self.url + "/addressbook/",
-                    json=dict(username=username, bookname=name, description=description),
-                    **self.client_kwargs,
-                )
-            )
-        token = name + " " + description
-        token = token.replace(" ", "-")
-        i, table, col, err = self._find_user_column(username)
-        if err:
-            return err
-        table.find_elements(By.CLASS_NAME, "col-actions")[i].find_element(By.LINK_TEXT, "Address Books").click()
-        self.driver.find_element(by=By.LINK_TEXT, value="+ Add address book").click()
-        self._set_text(By.NAME, "data[uri]", token)
-        self._set_text(By.NAME, "data[displayname]", name)
-        self._set_text(By.NAME, "data[description]", description)
-        save_changes_button = [
-            b for b in self.driver.find_elements(By.CLASS_NAME, "btn-primary") if b.text == "Save changes"
-        ][0]
-        save_changes_button.click()
-        return dict(added_address_book=name)
+    @validate_call
+    def books(self, username: str | None = None) -> List[Book]:
+        if username:
+            path = f"books/{username}"
+        else:
+            path = "books"
+        results = self._get(path)
+        return [Book(**result) for result in results]
 
-    def delete_address_book(self, username, name):
-        logger.info(f"delete_address_book {username} {name}")
-        if self.client:
-            return self._parse_response(
-                requests.delete(f"{self.url}/addressbook/{username}/{name}/", **self.client_kwargs)
-            )
-        i, table, col, err = self._find_user_column(username)
-        if err:
-            return err
-        table.find_elements(By.CLASS_NAME, "col-actions")[i].find_element(By.LINK_TEXT, "Address Books").click()
-        names = self.driver.find_elements(By.CLASS_NAME, "col-displayname")
-        buttons = self.driver.find_elements(By.CLASS_NAME, "btn-danger")
-        for j, button in enumerate(buttons):
-            if names[j].text == name:
-                button.click()
-                for b in self.driver.find_elements(By.CLASS_NAME, "btn-danger"):
-                    if b.text == "Delete " + name:
-                        b.click()
-                        return dict(deleted_address_book=name)
-        return dict(error=f"not found: '{name}'")
+    @validate_call
+    def add_book(self, username: str, bookname: str, description: str) -> Book:
+        request = AddBookRequest(username=username, bookname=bookname, description=description)
+        result = self._post("book", data=request.model_dump_json())
+        return Book(**result)
 
-    def reset(self):
-        logger.info("reset")
-        if self.client:
-            return self._parse_response(requests.post(f"{self.url}/reset/", **self.client_kwargs))
-        self.shutdown()
-        self.startup(
-            baikal.url,
-            baikal.username,
-            baikal.password,
-            baikal.address,
-            baikal.port,
-            baikal.profile_dir,
-            baikal.cert_file,
-            baikal.key_file,
-        )
-
-        self.reset_time = arrow.now()
-        return dict(message="server reset")
-
-    def status(self):
-        logger.info("status")
-        if self.client:
-            return self._parse_response(requests.get(f"{self.url}/status/", **self.client_kwargs))
-        return dict(
-            name="baikalctl",
-            version=__version__,
-            driver=repr(self.driver),
-            uptime=self.startup_time.humanize(),
-            reset=self.reset_time.humanize() if self.reset_time else "never",
-            profile_dir=self.profile.name if self.profile else None,
-            certificates=list(self.profile.ListCerts().keys()) if self.profile else None,
-            certificate_loaded=self.cert_file,
-            url=self.url,
-            username=self.username,
-            password="*" * len(self.password),
-            log_level=self.log_level,
-            verbose=self.verbose,
-            header=self.header,
-        )
-
-
-baikal = Client()
+    @validate_call
+    def delete_book(self, username: str, token: str) -> Dict[str, str]:
+        request = DeleteBookRequest(username=username, token=token)
+        return self._delete("book", data=request.model_dump_json())

@@ -1,19 +1,17 @@
 # firefox profile
 
 import logging
-import pathlib
 import shlex
 import subprocess
 import tempfile
 import time
-
-logger = logging.getLogger(__name__)
+from pathlib import Path
 
 
 def countFiles(dir):
-    dir = pathlib.Path(dir)
+    dir = Path(dir)
     if dir.is_dir():
-        return len(list(pathlib.Path(dir).glob("*")))
+        return len(list(Path(dir).glob("*")))
     return -1
 
 
@@ -38,7 +36,7 @@ def run(cmd, **kwargs):
 def commonName(cert):
     with tempfile.NamedTemporaryFile(suffix=".pem") as tf:
         pemCert = cert
-        if pathlib.Path(cert).suffix == ".p12":
+        if Path(cert).suffix == ".p12":
             run(f"openssl pkcs12 -in {str(cert)} -nokeys -out {tf.name} -password pass:")
             pemCert = tf.name
         cmd = f"openssl x509 -in {pemCert} -noout -subject"
@@ -53,29 +51,29 @@ def commonName(cert):
 
 class Profile:
 
-    CREATE_TIMEOUT = 30
-    STABILIZE = 2
-    DEFAULT_DIR = pathlib.Path.home() / ".cache" / "baikalctl" / "profile"
-
-    def __init__(self, dir=None, name=None):
-        if name is None:
-            name = "default"
+    def __init__(self, name, dir, create_timeout, stabilize_time, logger=None):
+        if logger is None:
+            logger = __name__
+        if isinstance(logger, str):
+            self.logger = logging.getLogger(logger)
+        else:
+            self.logger = logger
         self.name = name
-        if dir is None:
-            dir = self.DEFAULT_DIR
-        dir.mkdir(parents=True, exist_ok=True)
-        self.dir = dir
+        self.dir = Path(dir)
+        self.create_timeout = create_timeout
+        self.stabilize_time = stabilize_time
+        self.dir.mkdir(parents=True, exist_ok=True)
         if countFiles(self.dir) < 3:
             self.create()
 
     def create(self):
-        logger.info("Creating profile...")
+        self.logger.info("Creating profile...")
         run(f"/usr/bin/firefox --headless --createprofile '{self.name} {self.dir}'")
         proc = subprocess.Popen(shlex.split(f"/usr/bin/firefox --headless --profile {self.dir} --first-startup"))
-        timeout_tick = time.time() + self.CREATE_TIMEOUT
+        timeout_tick = time.time() + self.create_timeout
         stable = 0
         lastcount = 0
-        while stable <= self.STABILIZE:
+        while stable <= self.stabilize_time:
             if time.time() > timeout_tick:
                 raise RuntimeError("timeout waiting for profile init")
             if proc.poll() is not None:
@@ -89,7 +87,7 @@ class Profile:
             time.sleep(1)
         proc.kill()
         proc.wait()
-        logger.info(f"Profile {self.name} written to {self.dir}")
+        self.logger.info(f"Profile {self.name} written to {self.dir}")
 
     def ListCerts(self):
         certlist = mklist(subprocess.check_output(shlex.split(f"certutil -L -d sql:{str(self.dir)}")))
@@ -103,13 +101,13 @@ class Profile:
 
     def AddCert(self, cert, key=None):
         certName = commonName(cert)
-        logger.info("Adding client certificate...")
+        self.logger.info("Adding client certificate...")
         with tempfile.NamedTemporaryFile(suffix=".p12") as tf:
-            if pathlib.Path(cert).suffix != ".p12":
+            if Path(cert).suffix != ".p12":
                 cmd = f"openssl pkcs12 -export -in {str(cert)} -inkey {str(key)} -out {tf.name} -passout pass:"
                 run(cmd)
                 cert = tf.name
             cmd = f"pk12util -i {cert} -n '{certName}' -d sql:{str(self.dir)} -W ''"
             run(cmd)
-        logger.info(f"Certificate {certName} added to profile {self.name}.")
+        self.logger.info(f"Certificate {certName} added to profile {self.name}.")
         return certName

@@ -1,24 +1,19 @@
 # cli tests
 
+import json
 import os
 import shlex
 
 import pytest
 from click.testing import CliRunner
 
-import baikalctl
-from baikalctl import __version__, cli
-
-
-def test_version():
-    """Test reading version and module name"""
-    assert baikalctl.__name__ == "baikalctl"
-    assert __version__
-    assert isinstance(__version__, str)
+import baikalctl as baikalctl_module
+from baikalctl import __version__, bcc
+from baikalctl.models import Book, User
 
 
 @pytest.fixture
-def run():
+def run(test_url):
     runner = CliRunner()
 
     env = os.environ.copy()
@@ -27,9 +22,11 @@ def run():
     def _run(cmd, **kwargs):
         assert_exit = kwargs.pop("assert_exit", 0)
         assert_exception = kwargs.pop("assert_exception", None)
+        parse_json = kwargs.pop("parse_json", True)
         env.update(kwargs.pop("env", {}))
+        env.update({"BCC_URL": test_url})
         kwargs["env"] = env
-        result = runner.invoke(cli, cmd, **kwargs)
+        result = runner.invoke(bcc, cmd, **kwargs)
         if assert_exception is not None:
             assert isinstance(result.exception, assert_exception)
         elif result.exception is not None:
@@ -40,44 +37,73 @@ def run():
                 f"cmd: '{shlex.join(cmd)}'\n"
                 f"output: {str(result.output)}"
             )
+        if parse_json:
+            return json.loads(result.output)
         return result
 
     return _run
 
 
-def test_cli_no_args(run):
-    result = run([])
-    assert "Usage:" in result.output
+def test_cli_version():
+    assert baikalctl_module.__name__ == "baikalctl"
+    assert __version__
+    assert isinstance(__version__, str)
 
 
-def test_cli_help(run):
-    result = run(["--help"])
-    assert "Show this message and exit." in result.output
+def test_cli_status(run, client):
+    result = run(["status"])
+    assert isinstance(result, dict)
+    print(result)
 
 
-def test_cli_exception(run):
-
-    cmd = ["--shell-completion", "and_now_for_something_completely_different"]
-
-    with pytest.raises(RuntimeError) as exc:
-        result = run(cmd)
-    assert isinstance(exc.value, RuntimeError)
-
-    # example of testing for expected exception
-    result = run(cmd, assert_exception=RuntimeError)
-    assert result.exception
-    assert result.exc_info[0] == RuntimeError
-    assert result.exception.args[0] == "cannot determine shell"
-
-    with pytest.raises(AssertionError) as exc:
-        result = run(cmd, assert_exception=ValueError)
-    assert exc
+def test_cli_mkuser(run, client, username, displayname, password):
+    result = run(["mkuser", username, displayname, password])
+    assert isinstance(result, dict)
+    user = User(**result)
+    assert isinstance(user, User)
+    assert user.username == username
+    assert user.displayname == displayname
+    ret = client.delete_user(username)
+    assert ret == dict(deleted_user=username)
 
 
-def test_cli_exit(run):
-    result = run(["--help"], assert_exit=None)
-    assert result
-    result = run(["--help"], assert_exit=0)
-    assert result
-    with pytest.raises(AssertionError):
-        run(["--help"], assert_exit=-1)
+def test_cli_users(run, client, testuser):
+    result = run(["users"])
+    assert len(result)
+    assert isinstance(result, list)
+    for r in result:
+        assert isinstance(r, dict)
+    users = [User(**r) for r in result]
+    assert testuser.username in [u.username for u in users]
+
+
+def test_cli_rmuser(run, client, testuser, password):
+    result = run(["rmuser", testuser.username])
+    assert result == dict(deleted_user=testuser.username)
+    users = client.users()
+    assert testuser.username not in [u.username for u in users]
+    user = client.add_user(testuser.username, testuser.displayname, password)
+    assert user
+
+
+def test_cli_mkbook(run, client, testuser, bookname, description):
+    result = run(["mkbook", testuser.username, bookname, description])
+    assert isinstance(result, dict)
+    book = Book(**result)
+    assert isinstance(book, Book)
+    ret = client.delete_book(testuser.username, book.token)
+    assert ret == dict(deleted_book=book.token)
+
+
+def test_cli_books(run, client, testuser, testbook):
+    results = run(["books"])
+    assert isinstance(results, list)
+    for result in results:
+        assert isinstance(result, dict)
+    books = [Book(**result) for result in results]
+    assert testbook in books
+
+
+def test_cli_rmbook(run, client, testuser, testbook):
+    result = run(["rmbook", testuser.username, testbook.token])
+    assert result == dict(deleted_book=testbook.token)
