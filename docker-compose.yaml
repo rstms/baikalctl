@@ -6,7 +6,6 @@ services:
     restart: unless-stopped
     volumes:
       - ${BAIKALCTL_CERTS_DIR:-/home/baikalctl/certs}:/home/baikalctl/certs
-      - .:/home/baikalctl/src/baikalctl
     environment:
       BAIKALCTL_USERNAME:
       BAIKALCTL_PASSWORD:
@@ -24,8 +23,6 @@ services:
       BAIKALCTL_API_KEY:
     expose:
       - "8000"
-    ports:
-      - "5999:5901"
 
     depends_on:
       - baikalctl_proxy
