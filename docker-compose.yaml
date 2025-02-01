@@ -24,9 +24,6 @@ services:
       DEBUG:
     expose:
       - "8000"
-    ports:
-      - "8000:8000"
-      - "5999:5901"
 
     depends_on:
       - baikalctl_proxy
