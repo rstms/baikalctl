@@ -24,7 +24,7 @@ serve() {
 	baikalctl --show-config
 	if [ -n "${VNC_EXPOSED:-}" ]; then
 	    echo "Exposing VNC port"
-	    rm .vnc/config 
+	    rm -f .vnc/config 
 	    echo "${VNC_PASSWORD:-vnc}" | vncpasswd -f >.vnc/passwd
 	fi
     fi

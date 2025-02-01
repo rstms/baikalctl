@@ -5,7 +5,9 @@ from contextlib import asynccontextmanager
 
 import arrow
 from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request
-from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse, PlainTextResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from typing_extensions import Annotated
 
 from . import settings
@@ -21,7 +23,6 @@ from .models import (
     DeleteBookResponse,
     DeleteUserRequest,
     DeleteUserResponse,
-    ErrorResponse,
     InitializeResponse,
     ResetResponse,
     ShutdownResponse,
@@ -67,10 +68,23 @@ async def browser_exception_handler(request: Request, exc: BrowserException):
     path = str(request.url)[len(str(request.base_url)) :]
     return JSONResponse(
         status_code=500,
-        content=ErrorResponse(
-            success=False, request=request.method + " /" + path, message=exc.__class__.__name__, detail=str(exc)
-        ).model_dump_json(),
+        content=dict(
+            success=False,
+            request=request.method + " /" + path,
+            message=exc.__class__.__name__,
+            detail=" ".join([str(arg) for arg in exc.args]),
+        ),
     )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    return PlainTextResponse(str(exc), status_code=400)
 
 
 @app.middleware("http")
