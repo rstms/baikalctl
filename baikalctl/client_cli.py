@@ -170,5 +170,19 @@ def status(ctx):
     output(ctx.status())
 
 
+@bcc.command
+@click.pass_obj
+def shutdown(ctx):
+    """request server shutdown"""
+    output(ctx.shutdown())
+
+
+@bcc.command
+@click.pass_obj
+def uptime(ctx):
+    """server uptime"""
+    output(ctx.uptime())
+
+
 if __name__ == "__main__":
     sys.exit(bcc())  # pragma: no cover

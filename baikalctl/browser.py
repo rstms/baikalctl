@@ -59,8 +59,9 @@ class SessionConfig:
     create_profile = False
 
     @validate_call
-    def __init__(
+    def __init__(  # noqa: C901
         self,
+        *,
         url: str | None = None,
         cert: str | None = None,
         key: str | None = None,
@@ -71,6 +72,7 @@ class SessionConfig:
         log_level: str | None = None,
         logger: str | Any = None,
         debug: bool | None = None,
+        api_key: str | None = None,
     ):
         if url is not None:
             self.__class__.url = url
@@ -92,6 +94,8 @@ class SessionConfig:
             self.__class__.log_level = log_level
         if debug is not None:
             self.__class__.debug = debug
+        if api_key is not None:
+            self.__class__.api_key = api_key
 
 
 class Session:
@@ -125,6 +129,7 @@ class Session:
         self.key_file = config.key
         self.profile.AddCert(config.cert, config.key)
         self.debug = config.debug
+        self.api_key = config.api_key
 
     def _load_driver(self):
         if not self.driver:
@@ -281,7 +286,7 @@ class Session:
                 click=True,
             ):
                 if self.driver.current_url.endswith("/baikal/admin/"):
-                    return dict(status="initialized")
+                    return dict(message="initialized")
                 else:
                     raise InitFailed("unexpected url after start button: {self.driver.current_url}")
             jumbotron = self._find_element("initialization title", "body .jumbotron")
@@ -473,7 +478,7 @@ class Session:
             with_text="Delete " + username,
             click=True,
         )
-        return dict(deleted_user=username)
+        return dict(message=f"deleted user: {username}")
 
     # new
     @validate_call
@@ -595,7 +600,7 @@ class Session:
             with_text="Delete " + book["bookname"],
             click=True,
         )
-        return dict(deleted_book=request.token)
+        return dict(message=f"deleted_book: {request.token}")
 
     @validate_call
     def reset(self, admin: Account) -> Dict[str, str]:

@@ -32,10 +32,11 @@ RUN \
     dd if=/dev/random count=1 | base64 | head -1 | cut -b-32 | vncpasswd -f >/home/${USER}/.vnc/passwd && \
     chmod 700 /home/${USER}/.vnc/xstartup && \
     chmod 600 /home/${USER}/.vnc/passwd && \
-    chown -R ${USER}:${USER} /home/${USER}/.vnc && \
-    echo "localhost" >/home/${USER}/.vnc/config
+    echo "localhost" >/home/${USER}/.vnc/config && \
+    chown -R ${USER}:${USER} /home/${USER}/.vnc
 
 EXPOSE 8000
+EXPOSE 5901
 
 USER ${USER}
 WORKDIR /home/${USER}
@@ -49,10 +50,7 @@ ENV WHEEL=$WHEEL
 COPY --chmod=0644 ${WHEEL} .
 RUN mkdir -p .cache/baikalctl/profile
 
-# dev/test: install wheel and dependencies into local python environment
-#RUN pip install --break-system-packages $WHEEL
-
-# prod: install wheel with pipx
+# pipx install from wheel
 RUN \
     pipx install ${WHEEL} && \
     baikalctl --version && \
@@ -72,16 +70,17 @@ USER root
 COPY --chmod=0755 entrypoint /usr/local/bin/entrypoint
 RUN pip cache purge && rm -rf /root/.cache/pipx
 
-# dev/test environment
+###### dev/test config #####
 #RUN \
+#    pipx delete baikalctl
+#    pipx install rstms-tq
 #    apk add doas bash less vim coreutils make jq git man-pages mandoc mandoc-apropos docs && \
-#    echo "permit keepenv nopass ${USER}" >>/etc/doas.conf 
-
-RUN \
-    echo vnc | vncpasswd -f >/home/${USER}/.vnc/passwd \
-    echo "localhost" >/home/${USER}/.vnc/config
-    
+#    pip install --break-system-packages $WHEEL
+#    echo "permit keepenv nopass ${USER}" >>/etc/doas.conf && \
+#    echo vnc | vncpasswd -f >/home/${USER}/.vnc/passwd && \
+#    rm /home/${USER}/.vnc/config
 #EXPOSE 5901
+##### end dev/test config #####
 
 USER ${USER}
 ENV DISPLAY=:1
@@ -89,9 +88,6 @@ ENV DISPLAY=:1
 COPY --chmod=0644 docker-compose.yaml /home/${USER}/
 
 COPY --chmod=0644  build_time /etc/build_time
-
-# dev/test command
-#RUN pipx install rstms-tq
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
 CMD ["server"]

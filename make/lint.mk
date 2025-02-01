@@ -1,11 +1,15 @@
 # python lint makefile
 
-lint_line_length := 120
-lint_python_version := 310
+LINT_MAX_COMPLEXITY ?= 10
+LINT_LINE_LENGTH ?= 120
+LINT_IGNORE ?= E203
 
-ISORT_OPTS = --py $(lint_python_version) --profile black --gitignore
-BLACK_OPTS = --target-version py$(lint_python_version) --line-length $(lint_line_length)
-FLAKE8_OPTS = --max-line-length $(lint_line_length)
+LINT_PYTHON_VERSION != python --version | sed 's/Python \([0-9]*\)\.\([0-9]*\).*/\1\2/'
+ignore_errors := $(if $(LINT_IGNORE),--extend-ignore $(LINT_IGNORE),)
+ 
+ISORT_OPTS = --py $(LINT_PYTHON_VERSION) --profile black
+BLACK_OPTS = --target-version py$(LINT_PYTHON_VERSION) --line-length $(LINT_LINE_LENGTH)
+FLAKE8_OPTS = --max-line-length $(LINT_LINE_LENGTH) --max-complexity $(LINT_MAX_COMPLEXITY) $(ignore_errors)
 
 export ISORT_OPTS
 export BLACK_OPTS

@@ -18,6 +18,10 @@ from baikalctl.models import Book, User
 LISTEN_TIMEOUT = 5
 
 TEST_PORT = 8001
+TEST_CALDAV_URL = os.environ["TEST_CALDAV_URL"]
+TEST_API_KEY = os.environ.get("TEST_API_KEY", "test_api_key")
+TEST_CLIENT_CERT = "certs/client.pem"
+TEST_CLIENT_KEY = "certs/client.key"
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -29,6 +33,11 @@ def test_env():
     finally:
         for k, v in env.items():
             os.environ[k] = v
+
+
+@pytest.fixture(scope="session")
+def test_api_key():
+    return TEST_API_KEY
 
 
 @pytest.fixture
@@ -45,16 +54,17 @@ class TestServer:
         self._server = None
 
         SessionConfig(
-            settings.URL,
-            settings.CERT,
-            settings.KEY,
-            settings.PROFILE_NAME,
-            settings.PROFILE_DIR,
-            settings.PROFILE_CREATE_TIMEOUT,
-            settings.PROFILE_STABILIZE_TIME,
+            url=TEST_CALDAV_URL,
+            cert=TEST_CLIENT_CERT,
+            key=TEST_CLIENT_KEY,
+            profile_name=settings.PROFILE_NAME,
+            profile_dir=settings.PROFILE_DIR,
+            profile_create_timeout=settings.PROFILE_CREATE_TIMEOUT,
+            profile_stabilize_time=settings.PROFILE_STABILIZE_TIME,
             log_level="DEBUG",
             logger="uvicorn",
             debug=True,
+            api_key=TEST_API_KEY,
         )
 
     def run(self):
@@ -119,7 +129,7 @@ def client(test_server, test_url):
     password = os.environ["BCC_PASSWORD"]
     cert = os.environ["BCC_CERT"]
     key = os.environ["BCC_KEY"]
-    api_key = os.environ["BCC_API_KEY"]
+    api_key = TEST_API_KEY
     client = API(test_url, username, password, cert, key, api_key)
     yield client
 

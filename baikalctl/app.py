@@ -1,21 +1,33 @@
 import logging
+import os
+import signal
 from contextlib import asynccontextmanager
 
-from arrow import Arrow
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+import arrow
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse
-from typing_extensions import Annotated, Dict, List
+from typing_extensions import Annotated
 
 from . import settings
 from .browser import BrowserException, Session
 from .models import (
     Account,
     AddBookRequest,
+    AddBookResponse,
     AddUserRequest,
-    Book,
+    AddUserResponse,
+    BooksResponse,
     DeleteBookRequest,
+    DeleteBookResponse,
     DeleteUserRequest,
-    User,
+    DeleteUserResponse,
+    ErrorResponse,
+    InitializeResponse,
+    ResetResponse,
+    ShutdownResponse,
+    StatusResponse,
+    UptimeResponse,
+    UsersResponse,
 )
 from .version import __version__
 
@@ -27,7 +39,7 @@ async def read_security_headers(
     x_admin_password: Annotated[str, Header()],
     x_api_key: Annotated[str, Header()],
 ):
-    if x_api_key != settings.API_KEY:
+    if x_api_key != app.state.session.api_key:
         raise HTTPException(status_code=401, detail="invalid API key")
     if not x_admin_username:
         raise HTTPException(status_code=401, detail="invalid username")
@@ -40,7 +52,7 @@ async def read_security_headers(
 async def lifespan(app: FastAPI):
     log.setLevel(settings.LOG_LEVEL)
     log.info(f"baikalctl v{__version__} startup")
-    app.state.startup_time = Arrow.now()
+    app.state.startup_time = arrow.now()
     app.state.session = Session()
     yield
     log.info("shutdown")
@@ -52,9 +64,12 @@ app = FastAPI(dependencies=[Depends(read_security_headers)], lifespan=lifespan)
 
 @app.exception_handler(BrowserException)
 async def browser_exception_handler(request: Request, exc: BrowserException):
+    path = str(request.url)[len(str(request.base_url)) :]
     return JSONResponse(
         status_code=500,
-        content={exc.__class__.__name__: str(exc)},
+        content=ErrorResponse(
+            success=False, request=request.method + " /" + path, message=exc.__class__.__name__, detail=str(exc)
+        ).model_dump_json(),
     )
 
 
@@ -66,54 +81,71 @@ async def logout_after_request(request: Request, call_next):
 
 
 @app.get("/status/")
-async def get_status() -> Dict[str, str]:
-    return app.state.session.status(app.state.account)
+async def get_status() -> StatusResponse:
+    return StatusResponse(request="status", status=app.state.session.status(app.state.account))
 
 
 @app.post("/reset/")
-async def post_reset() -> Dict[str, str]:
+async def post_reset() -> ResetResponse:
     return app.state.session.reset(app.state.account)
 
 
 @app.post("/initialize/")
-async def post_initialize() -> Dict[str, str]:
+async def post_initialize() -> InitializeResponse:
     return app.state.session.initialize(app.state.account)
 
 
 @app.get("/users/")
-async def get_users() -> List[User]:
-    return app.state.session.users(app.state.account)
+async def get_users() -> UsersResponse:
+    return UsersResponse(users=app.state.session.users(app.state.account))
 
 
 @app.post("/user/")
-async def post_user(request: AddUserRequest) -> User:
-    return app.state.session.add_user(app.state.account, request)
+async def post_user(request: AddUserRequest) -> AddUserResponse:
+    return AddUserResponse(user=app.state.session.add_user(app.state.account, request))
 
 
 @app.delete("/user/")
-async def delete_user(request: DeleteUserRequest) -> Dict[str, str]:
+async def delete_user(request: DeleteUserRequest) -> DeleteUserResponse:
     return app.state.session.delete_user(app.state.account, request)
 
 
 @app.get("/books/")
-async def get_addressbooks_all() -> List[Book]:
+async def get_addressbooks_all() -> BooksResponse:
     users = app.state.session.users(app.state.account)
     books = []
     for user in users:
         books.extend(app.state.session.books(app.state.account, user.username))
-    return books
+    return BooksResponse(books=books)
 
 
 @app.get("/books/{username}/")
-async def get_addressbooks_user(username: str) -> List[Book]:
-    return app.state.session.books(app.state.account, username)
+async def get_addressbooks_user(username: str) -> BooksResponse:
+    return BooksResponse(books=app.state.session.books(app.state.account, username))
 
 
 @app.post("/book/")
-async def post_address_book(request: AddBookRequest) -> Book:
-    return app.state.session.add_book(app.state.account, request)
+async def post_address_book(request: AddBookRequest) -> AddBookResponse:
+    return AddBookResponse(book=app.state.session.add_book(app.state.account, request))
 
 
 @app.delete("/book/")
-async def delete_book(request: DeleteBookRequest) -> Dict[str, str]:
+async def delete_book(request: DeleteBookRequest) -> DeleteBookResponse:
     return app.state.session.delete_book(app.state.account, request)
+
+
+@app.post("/shutdown/")
+async def shutdown(background_tasks: BackgroundTasks) -> ShutdownResponse:
+    log.warning("received shutdown request")
+    background_tasks.add_task(shutdown_app)
+    return dict(message="shutdown requested")
+
+
+def shutdown_app():
+    log.warning("shutdown_task: exiting")
+    os.kill(os.getpid(), signal.SIGINT)
+
+
+@app.get("/uptime/")
+async def uptime() -> UptimeResponse:
+    return dict(message="started " + app.state.startup_time.humanize(arrow.now()))

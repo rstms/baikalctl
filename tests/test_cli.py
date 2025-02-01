@@ -13,7 +13,7 @@ from baikalctl.models import Book, User
 
 
 @pytest.fixture
-def run(test_url):
+def run(test_url, test_api_key):
     runner = CliRunner()
 
     env = os.environ.copy()
@@ -24,7 +24,7 @@ def run(test_url):
         assert_exception = kwargs.pop("assert_exception", None)
         parse_json = kwargs.pop("parse_json", True)
         env.update(kwargs.pop("env", {}))
-        env.update({"BCC_URL": test_url})
+        env.update({"BCC_URL": test_url, "BCC_API_KEY": test_api_key})
         kwargs["env"] = env
         result = runner.invoke(bcc, cmd, **kwargs)
         if assert_exception is not None:
@@ -63,8 +63,7 @@ def test_cli_mkuser(run, client, username, displayname, password):
     assert isinstance(user, User)
     assert user.username == username
     assert user.displayname == displayname
-    ret = client.delete_user(username)
-    assert ret == dict(deleted_user=username)
+    client.delete_user(username)
 
 
 def test_cli_users(run, client, testuser):
@@ -91,8 +90,7 @@ def test_cli_mkbook(run, client, testuser, bookname, description):
     assert isinstance(result, dict)
     book = Book(**result)
     assert isinstance(book, Book)
-    ret = client.delete_book(testuser.username, book.token)
-    assert ret == dict(deleted_book=book.token)
+    client.delete_book(testuser.username, book.token)
 
 
 def test_cli_books(run, client, testuser, testbook):
@@ -106,4 +104,4 @@ def test_cli_books(run, client, testuser, testbook):
 
 def test_cli_rmbook(run, client, testuser, testbook):
     result = run(["rmbook", testuser.username, testbook.token])
-    assert result == dict(deleted_book=testbook.token)
+    assert result == dict(request="delete address book", success=True, message=f"deleted_book: {testbook.token}")

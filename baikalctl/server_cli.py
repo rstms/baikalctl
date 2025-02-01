@@ -7,7 +7,7 @@ import click.core
 import uvicorn
 
 from . import settings
-from .browser import Session, SessionConfig
+from .browser import SessionConfig
 from .exception_handler import ExceptionHandler
 from .shell import _shell_completion
 from .version import __timestamp__, __version__
@@ -30,6 +30,7 @@ def _ehandler(ctx, option, debug):
 @click.option("-A", "--address", default=settings.ADDRESS, help="server bind address (default: 0.0.0.0)")
 @click.option("-P", "--port", type=int, default=settings.PORT, help="server listen port (default: 8000)")
 @click.option("--profile-name", type=str, default=settings.PROFILE_NAME)
+@click.option("--api_key", type=str, default=settings.API_KEY)
 @click.option("--profile-dir", type=str, default=settings.PROFILE_DIR)
 @click.option("--profile-create-timeout", type=int, default=settings.PROFILE_CREATE_TIMEOUT)
 @click.option("--profile-stabilize-time", type=int, default=settings.PROFILE_STABILIZE_TIME)
@@ -59,6 +60,7 @@ def baikalctl(
     profile_name,
     show_config,
     shell_completion,
+    api_key,
 ):
     """baikalctl - admin CLI for baikal webdav/webcal server"""
 
@@ -88,16 +90,17 @@ def baikalctl(
     # logging.basicConfig(level=log_level)
 
     SessionConfig(
-        url,
-        cert,
-        key,
-        profile_name,
-        profile_dir,
-        profile_create_timeout,
-        profile_stabilize_time,
+        url=url,
+        cert=cert,
+        key=key,
+        profile_name=profile_name,
+        profile_dir=profile_dir,
+        profile_create_timeout=profile_create_timeout,
+        profile_stabilize_time=profile_stabilize_time,
         debug=debug,
         logger="uvicorn",
         log_level=log_level,
+        api_key=api_key,
     )
 
     uvicorn.run(

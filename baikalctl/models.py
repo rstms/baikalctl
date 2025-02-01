@@ -1,7 +1,7 @@
 # models
 
 import string
-from typing import Any
+from typing import Any, Dict, List
 
 from pydantic import BaseModel, Field, ValidationInfo, model_validator
 
@@ -62,18 +62,84 @@ class Book(BookBase):
     token: str = Field(None, pattern=regex_token)
 
 
+class Response(BaseModel):
+    success: str | bool | None = Field(True)
+    request: str | None = Field("")
+    message: str
+
+
 class AddUserRequest(User):
     password: str = Field(..., pattern=regex_password)
+
+
+class AddUserResponse(Response):
+    request: str | None = Field("add user")
+    message: str | None = Field("user added")
+    user: User
 
 
 class DeleteUserRequest(Model):
     username: str = Field(..., pattern=regex_email)
 
 
+class DeleteUserResponse(Response):
+    request: str | None = Field("delete user")
+
+
 class AddBookRequest(BookBase):
     pass
+
+
+class AddBookResponse(Response):
+    request: str | None = Field("add address book")
+    message: str | None = Field("address book added")
+    book: Book
 
 
 class DeleteBookRequest(Model):
     username: str = Field(..., pattern=regex_email)
     token: str = Field(..., pattern=regex_token)
+
+
+class DeleteBookResponse(Response):
+    request: str | None = Field("delete address book")
+
+
+class UsersResponse(Response):
+    request: str | None = Field("list users")
+    message: str | None = Field("user list")
+    users: List[User]
+
+
+class BooksResponse(Response):
+    request: str | None = Field("list address books")
+    message: str | None = Field("address book list")
+    books: List[Book]
+
+
+class StatusResponse(Response):
+    request: str | None = Field("status")
+    message: str | None = Field("server status")
+    status: Dict[str, Any]
+
+
+class InitializeResponse(Response):
+    request: str | None = Field("initialize")
+
+
+class ShutdownResponse(Response):
+    request: str | None = Field("shutdown")
+
+
+class UptimeResponse(Response):
+    request: str | None = Field("uptime")
+
+
+class ResetResponse(Response):
+    request: str | None = Field("reset")
+
+
+class ErrorResponse(Response):
+    success: bool | None = Field(False)
+    message: str | None = Field("RequestFailed")
+    detail: str | None = Field("unspecified error")

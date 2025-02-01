@@ -11,11 +11,16 @@ from requests.exceptions import JSONDecodeError
 from .models import (
     Account,
     AddBookRequest,
+    AddBookResponse,
     AddUserRequest,
+    AddUserResponse,
     Book,
+    BooksResponse,
     DeleteBookRequest,
     DeleteUserRequest,
+    StatusResponse,
     User,
+    UsersResponse,
 )
 
 
@@ -77,7 +82,8 @@ class API:
 
     @validate_call
     def status(self) -> Dict[str, str]:
-        return self._get("status")
+        response = StatusResponse(**self._get("status"))
+        return response.status
 
     @validate_call
     def initialize(self) -> Dict[str, str]:
@@ -89,14 +95,14 @@ class API:
 
     @validate_call
     def users(self) -> List[User]:
-        users = self._get("users")
-        return [User(**user) for user in users]
+        response = UsersResponse(**self._get("users"))
+        return response.users
 
     @validate_call
     def add_user(self, username: str, displayname: str, password: str) -> User:
         request = AddUserRequest(username=username, displayname=displayname, password=password)
-        result = self._post("user", data=request.model_dump_json())
-        return User(**result)
+        response = AddUserResponse(**self._post("user", data=request.model_dump_json()))
+        return response.user
 
     @validate_call
     def delete_user(self, username: str) -> Dict[str, str]:
@@ -109,16 +115,22 @@ class API:
             path = f"books/{username}"
         else:
             path = "books"
-        results = self._get(path)
-        return [Book(**result) for result in results]
+        result = BooksResponse(**self._get(path))
+        return result.books
 
     @validate_call
     def add_book(self, username: str, bookname: str, description: str) -> Book:
         request = AddBookRequest(username=username, bookname=bookname, description=description)
-        result = self._post("book", data=request.model_dump_json())
-        return Book(**result)
+        response = AddBookResponse(**self._post("book", data=request.model_dump_json()))
+        return response.book
 
     @validate_call
     def delete_book(self, username: str, token: str) -> Dict[str, str]:
         request = DeleteBookRequest(username=username, token=token)
         return self._delete("book", data=request.model_dump_json())
+
+    def shutdown(self):
+        return self._post("shutdown")
+
+    def uptime(self):
+        return self._get("uptime")

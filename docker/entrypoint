@@ -7,19 +7,38 @@ if [ $# -gt 0 ]; then
     cmd=$1
 fi
 
+cleanup() {
+    echo "killing vncserver"
+    pkill vncserver
+}
+
+terminate() {
+    echo "SIGTERM received, sending shutdown request"
+    bcc --url http://localhost:8000 shutdown
+}
+
 serve() {
     echo "Version $(cat VERSION)"
     echo "Built $(cat /etc/build_time)"
+    if [ ${DEBUG:-0} -gt 0 ]; then
+	baikalctl --show-config
+	if [ -n "${VNC_EXPOSED:-}" ]; then
+	    echo "Exposing VNC port"
+	    rm .vnc/config 
+	    echo "${VNC_PASSWORD:-vnc}" | vncpasswd -f >.vnc/passwd
+	fi
+    fi
     export DISPLAY=:1
-    if [ -n "${BAIKALCTL_XVNC_VERBOSE:-}" ]; then
+    if [ -n "${VNC_VERBOSE:-}" ]; then
 	echo vncserver logging enabled
 	vncserver :1 &
     else
 	echo vncserver logging disabled
 	vncserver :1 >/dev/null 2>&1 &
     fi
+    trap cleanup EXIT
+    trap terminate TERM
     "$@"
-    pkill vncserver
 }
 
 

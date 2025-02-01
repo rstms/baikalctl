@@ -14,15 +14,19 @@ services:
       BAIKALCTL_PORT:
       BAIKALCTL_CERT:
       BAIKALCTL_KEY:
-      BAIKALCTL_LOG_LEVEL:
-      BAIKALCTL_DEBUG:
-      BAIKALCTL_VERBOSE:
       BAIKALCTL_PROFILE:
-      BAIKALCTL_XVNC_VERBOSE:
       BAIKALCTL_PROFILE_CREATE_TIMEOUT:
       BAIKALCTL_API_KEY:
+      VNC_VERBOSE:
+      VNC_EXPOSED:
+      VNC_PASSWORD:
+      LOG_LEVEL:
+      DEBUG:
     expose:
       - "8000"
+    ports:
+      - "8000:8000"
+      - "5999:5901"
 
     depends_on:
       - baikalctl_proxy
