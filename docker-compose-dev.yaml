@@ -1,0 +1,5 @@
+services:
+  baikalctl:
+    ports:
+      - "8000:8000"
+      - "5999:5901"
